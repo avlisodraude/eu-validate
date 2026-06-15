@@ -4,6 +4,8 @@ Validate EU **VAT**, **IBAN**, and Dutch **BSN/KvK** numbers — offline, zero-d
 
 [![npm](https://img.shields.io/npm/v/@alosha/eu-validate.svg)](https://www.npmjs.com/package/@alosha/eu-validate)
 
+**▶ [Try the live demo](https://eu-validate.alosha.dev/demo)** — validate VAT, IBAN, BSN, KvK and postal codes right in your browser. No install, nothing uploaded.
+
 - ✅ **Zero runtime dependencies** — pure, deterministic checks. Nothing is fetched.
 - 🧮 **Real checksums**, not just regex — VAT (NL, BE, DE, FR, ES, IT), IBAN (ISO 13616 mod-97), Dutch BSN (11-proof).
 - 🌍 **Format validation for all 27 EU VAT formats** + SEPA IBAN lengths.
