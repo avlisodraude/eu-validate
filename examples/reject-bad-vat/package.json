@@ -1,0 +1,13 @@
+{
+  "name": "reject-bad-vat-example",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "eu-validate recipe: reject malformed VAT numbers offline before ever calling VIES",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@alosha/eu-validate": "^0.1.0"
+  }
+}
