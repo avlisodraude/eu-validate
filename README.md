@@ -2,7 +2,11 @@
 
 Validate EU **VAT**, **IBAN**, and Dutch **BSN/KvK** numbers — offline, zero-dependency, fully typed. Add live **VIES + KvK** lookups with one API key.
 
-[![npm](https://img.shields.io/npm/v/@alosha/eu-validate.svg)](https://www.npmjs.com/package/@alosha/eu-validate)
+[![npm version](https://img.shields.io/npm/v/@alosha/eu-validate)](https://www.npmjs.com/package/@alosha/eu-validate)
+[![npm downloads](https://img.shields.io/npm/dm/@alosha/eu-validate)](https://www.npmjs.com/package/@alosha/eu-validate)
+[![Gzip size](https://img.shields.io/bundlephobia/minzip/@alosha/eu-validate)](https://unpkg.com/@alosha/eu-validate/dist/index.js)
+[![Types included](https://img.shields.io/badge/types-included-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **▶ [Try the live demo](https://eu-validate.alosha.dev/demo)** — validate VAT, IBAN, BSN, KvK and postal codes right in your browser. No install, nothing uploaded.
 
@@ -63,6 +67,59 @@ import { validate } from '@alosha/eu-validate'
 validate('1011 AB', { type: 'postalCode', country: 'NL' })
 ```
 
+## Production recipes
+
+Real problems, complete solutions — copy, paste, ship.
+
+### Reject bad VAT numbers before you ever call VIES
+
+**The problem:** a B2B checkout must apply reverse-charge VAT, but VIES is slow, rate-limited, and rejects malformed input anyway.
+
+```ts
+import { validateVAT } from '@alosha/eu-validate'
+import { createClient } from '@alosha/eu-validate/cloud'
+
+const eu = createClient({ apiKey: process.env.ALOSHA_KEY! })
+
+export async function resolveVat(input: string) {
+  // 1. Offline first — structure + checksum, zero network, instant.
+  const offline = validateVAT(input)
+  if (!offline.valid) {
+    return { ok: false, reason: offline.errors[0] } // e.g. 'CHECKSUM_FAILED'
+  }
+
+  // 2. Spend a VIES round-trip only on numbers that already pass the checksum.
+  const live = await eu.verifyVAT(offline.normalized!)
+  return { ok: live.registered, company: live.name }
+}
+```
+
+**Why it works:** the offline checksum filters out typos and fabricated numbers for free, so the slow, rate-limited VIES call only ever runs on structurally valid input. You cut checkout latency and stop burning your VIES quota on garbage.
+
+### Validate Dutch BSN and IBAN without sending PII anywhere
+
+**The problem:** an onboarding form collects a BSN and IBAN, but shipping those to a third-party validation API is a GDPR data-egress problem.
+
+```ts
+import { validateBSN, validateIBAN } from '@alosha/eu-validate'
+
+// Pure, synchronous, offline — the values never leave the user's session.
+export function validateOnboarding(form: { bsn: string; iban: string }) {
+  const bsn = validateBSN(form.bsn)
+  const iban = validateIBAN(form.iban)
+
+  return {
+    valid: bsn.valid && iban.valid,
+    fields: {
+      bsn: bsn.valid ? null : bsn.errors[0],   // e.g. 'CHECKSUM_FAILED'
+      iban: iban.valid ? null : iban.errors[0] // e.g. 'INVALID_FORMAT'
+    }
+  }
+}
+```
+
+**Why it works:** every validator is a pure function with no network call, so sensitive identifiers like a BSN never reach an external processor. You get instant inline form feedback and one fewer data-processing agreement to sign.
+
 ## What "valid" means
 
 This library answers **"is this well-formed?"** — it never makes a network request, so it cannot tell you whether a number is *registered* or belongs to a real company. For that, use the Cloud client.
@@ -107,6 +164,20 @@ npm test        # jest
 npm run lint
 ```
 
+## Support & custom work
+
+`@alosha/eu-validate` is free and MIT-licensed, and always will be. When you need more than offline validation, there's a paid path backed by the maintainer — not a ticket queue:
+
+- **Cloud lookups** — hosted VIES VAT registration and KvK company lookups via `@alosha/eu-validate/cloud` (coming soon).
+- **Priority support** — a direct line to the person who wrote it, with prioritised fixes.
+- **Custom work** — extra country coverage or custom validators on request.
+
+Get in touch at [alosha.dev/support](https://alosha.dev/support).
+
 ## License
 
 MIT © Eduardo Silvanavarrete
+
+---
+
+Docs & live demo: [eu-validate.alosha.dev](https://eu-validate.alosha.dev) · Built by [Alosha](https://alosha.dev)
