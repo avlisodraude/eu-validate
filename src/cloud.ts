@@ -11,7 +11,15 @@
  * zero-dependency / no-network guarantee of `@alosha/eu-validate` holds.
  *
  * V1 status: client surface is defined; the hosted endpoints ship in Phase 3.
+ * Until then, `request()` fails fast with a clear message instead of letting
+ * calls hit a real but not-yet-implemented endpoint on eu-validate.alosha.dev.
  */
+
+/**
+ * Flip to `true` once the Phase 3 hosted endpoints
+ * (`/api/v1/vat/verify`, `/api/v1/kvk/lookup`) are live.
+ */
+const CLOUD_API_LIVE = false
 
 export interface CloudClientOptions {
   apiKey: string
@@ -64,6 +72,13 @@ export function createClient(options: CloudClientOptions): EuValidateCloudClient
   const timeoutMs = options.timeoutMs ?? 10000
 
   async function request<T>(path: string, body: unknown): Promise<T> {
+    if (!CLOUD_API_LIVE) {
+      throw new Error(
+        '@alosha/eu-validate/cloud: the hosted API has not shipped yet (Phase 3). ' +
+          'This client\'s surface is stable for future use, but calling it today would only ' +
+          'fail against a non-existent endpoint. Track availability at https://eu-validate.alosha.dev.'
+      )
+    }
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
     try {

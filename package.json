@@ -29,6 +29,7 @@
   "license": "MIT",
   "author": "Eduardo Silvanavarrete <avlis_odraude@hotmail.com>",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "import": {
