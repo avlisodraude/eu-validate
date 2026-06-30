@@ -1,6 +1,6 @@
 {
   "name": "@alosha/eu-validate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Validate EU VAT, IBAN, and Dutch BSN/KvK numbers — offline, zero-dependency, fully typed. Add live VIES + KvK lookups with one API key.",
   "keywords": [
     "vat",
