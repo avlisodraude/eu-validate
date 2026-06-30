@@ -1,0 +1,13 @@
+{
+  "name": "dutch-kyc-bundle-example",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "eu-validate recipe: validate a Dutch KvK+BSN+IBAN+VAT onboarding form in one pass with the validate() dispatcher",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@alosha/eu-validate": "^0.3.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "fail-fast-middleware-example",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "eu-validate recipe: reject malformed identifiers at the edge of an API with assertValid/ValidationError",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@alosha/eu-validate": "^0.3.0"
+  }
+}

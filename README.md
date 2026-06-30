@@ -142,6 +142,133 @@ export function validateOnboarding(form: { bsn: string; iban: string }) {
 
 **Why it works:** every validator is a pure function with no network call, so sensitive identifiers like a BSN never reach an external processor. You get instant inline form feedback and one fewer data-processing agreement to sign.
 
+### Confirm VAT registration when you can, fall back gracefully when you can't
+
+**The problem:** a live VIES registration check on top of the offline checksum can fail for reasons that have nothing to do with the VAT number — the hosted endpoint isn't live yet, a timeout, a bad response — and none of those should look like "this VAT is invalid."
+
+```ts
+import { validateVAT } from '@alosha/eu-validate'
+import { createClient, CloudNotAvailableError, CloudTimeoutError, CloudApiError } from '@alosha/eu-validate/cloud'
+
+const eu = createClient({ apiKey: process.env.ALOSHA_KEY! })
+
+export async function checkVat(input: string) {
+  const offline = validateVAT(input)
+  if (!offline.valid) {
+    return { status: 'invalid' as const, reason: offline.errors[0] }
+  }
+
+  try {
+    const live = await eu.verifyVAT(offline.normalized!)
+    return { status: (live.registered ? 'registered' : 'not_registered') as const, company: live.name }
+  } catch (err) {
+    if (err instanceof CloudNotAvailableError) {
+      // Hosted lookups aren't live yet — the offline checksum already passed, so degrade
+      // instead of failing the request.
+      return { status: 'format_valid_unconfirmed' as const, reason: 'cloud_not_available' }
+    }
+    if (err instanceof CloudTimeoutError || err instanceof CloudApiError) {
+      // Transient — don't tell the user their VAT number is wrong because VIES hiccuped.
+      return { status: 'format_valid_unconfirmed' as const, reason: 'cloud_error' }
+    }
+    throw err
+  }
+}
+```
+
+**Why it works:** `verifyVAT()` throws typed errors instead of a generic `Error`, so a Cloud outage or the not-yet-shipped Phase 3 endpoint never gets confused with "the VAT number is wrong." The offline checksum already did the hard rejection work, so every Cloud failure mode here degrades to "unconfirmed" instead of blocking the user.
+
+### Reject malformed identifiers at the edge of your API
+
+**The problem:** every route that accepts a VAT, IBAN or BSN re-implements the same `if (!result.valid) return res.status(400)...` boilerplate, and it's easy for one route to forget a field.
+
+```ts
+import express from 'express'
+import { validateIBAN, validateVAT, assertValid, ValidationError } from '@alosha/eu-validate'
+
+const app = express()
+app.use(express.json())
+
+app.post('/payouts', (req, res) => {
+  try {
+    const iban = assertValid(validateIBAN(req.body.iban))
+    const vat = assertValid(validateVAT(req.body.vat))
+    return res.json({ ok: true, iban: iban.normalized, vat: vat.normalized })
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({ ok: false, type: err.result.type, errors: err.result.errors })
+    }
+    throw err
+  }
+})
+```
+
+**Why it works:** `assertValid()` turns the usual "check `.valid`, then branch" dance into a single throw, so one `catch` block at the route boundary handles every identifier field the same way. `ValidationError` carries the full failing `ValidationResult`, so the 400 response tells the caller exactly which field and error code failed — no per-route boilerplate.
+
+### Validate a full Dutch company-onboarding form in one pass
+
+**The problem:** a B2B signup form for the Netherlands collects four different identifier types — KvK, BSN, IBAN, VAT — and hand-wiring four separate `validateX()` calls means the field list and the validator list drift apart as the form grows.
+
+```ts
+import { validate, type ValidateOptions } from '@alosha/eu-validate'
+
+const ONBOARDING_FIELDS: Record<string, ValidateOptions> = {
+  kvkNumber: { type: 'kvk' },
+  bsn: { type: 'bsn' },
+  iban: { type: 'iban' },
+  vatNumber: { type: 'vat' }
+}
+
+export function validateOnboardingForm(form: Record<string, string>) {
+  const fields = Object.fromEntries(
+    Object.entries(ONBOARDING_FIELDS).map(([field, options]) => [
+      field,
+      validate(form[field] ?? '', options)
+    ])
+  )
+
+  return {
+    valid: Object.values(fields).every((r) => r.valid),
+    fields // each entry is a full ValidationResult — keep `errors` for inline form feedback
+  }
+}
+```
+
+**Why it works:** the dispatcher means the field list is the single source of truth — add a row to `ONBOARDING_FIELDS` and the loop picks it up, instead of a fifth hand-written `validateX()` call drifting out of sync with the form. Every field still gets the same typed `ValidationResult`, so existing per-field error rendering keeps working unchanged.
+
+### Clean up a customer VAT list before a VIES batch run
+
+**The problem:** a finance team exports thousands of customer VAT numbers for a quarterly VIES re-verification, and running every row through VIES — typos, copy-paste artifacts and all — wastes the rate-limited quota on input that was never going to pass.
+
+```ts
+import { readFileSync, writeFileSync } from 'node:fs'
+import { validateVAT } from '@alosha/eu-validate'
+
+const rows = readFileSync('customers.csv', 'utf8')
+  .trim()
+  .split('\n')
+  .slice(1) // drop header
+  .map((line) => line.split(','))
+
+const clean: string[] = ['customer_id,vat_number']
+const rejected: string[] = ['customer_id,vat_number,error']
+
+for (const [customerId, vat] of rows) {
+  const result = validateVAT(vat)
+  if (result.valid) {
+    clean.push(`${customerId},${result.normalized}`)
+  } else {
+    rejected.push(`${customerId},${vat},${result.errors[0]}`)
+  }
+}
+
+writeFileSync('clean.csv', clean.join('\n'))
+writeFileSync('rejected.csv', rejected.join('\n'))
+console.log(`${clean.length - 1} clean, ${rejected.length - 1} rejected — only clean.csv needs a VIES call.`)
+```
+
+**Why it works:** the checksum pass is synchronous and free, so a list of 10,000 numbers is sorted into "worth a VIES call" and "already known bad" in milliseconds, with the specific error code attached to every rejected row for the finance team to act on. You spend VIES quota only on numbers that have a chance of being real.
+
 ## What "valid" means
 
 This library answers **"is this well-formed?"** — it never makes a network request, so it cannot tell you whether a number is *registered* or belongs to a real company. For that, use the Cloud client.

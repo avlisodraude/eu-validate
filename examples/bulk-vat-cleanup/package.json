@@ -1,0 +1,13 @@
+{
+  "name": "bulk-vat-cleanup-example",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "eu-validate recipe: sort a customer VAT export into clean vs rejected offline before a VIES batch run",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@alosha/eu-validate": "^0.3.0"
+  }
+}
