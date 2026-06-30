@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `createClient()` (`@alosha/eu-validate/cloud`) now fails fast with a clear
   message when `verifyVAT()` / `lookupKvK()` are called, instead of attempting
   a network request against the Phase 3 hosted endpoint before it exists.
+- Every validator's empty-input guard now uses a shared `isBlank()` helper
+  that checks `typeof input === 'string'` first, so a plain-JS caller passing
+  `null`/`undefined`/a number gets a clean `EMPTY_INPUT` result instead of a
+  thrown `TypeError` from calling `.trim()` on a non-string.
+
+### Removed
+
+- Stray `pnpm-lock.yaml` and `pnpm-workspace.yaml` — CI and all `npm run`
+  scripts use npm exclusively, and the workspace file still contained unfilled
+  scaffold placeholder text (`allowBuilds: esbuild: set this to true or false`)
+  that would error on `pnpm install`. `package-lock.json` remains the single
+  source of truth.
 
 ## [0.1.0] - 2026-06-15
 

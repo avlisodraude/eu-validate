@@ -1,13 +1,13 @@
 import { POSTAL_PATTERNS } from './countries.js'
 import type { PostalCodeOptions, ValidationResult } from './types.js'
-import { fail, ok } from './util.js'
+import { fail, isBlank, ok } from './util.js'
 
 /**
  * Validate a postal code against a country-specific pattern.
  * The country is required because formats overlap across countries.
  */
 export function validatePostalCode(input: string, options: PostalCodeOptions): ValidationResult {
-  if (!input || !input.trim()) return fail('postalCode', input, ['EMPTY_INPUT'])
+  if (isBlank(input)) return fail('postalCode', input, ['EMPTY_INPUT'])
   if (!options || !options.country) {
     return fail('postalCode', input, ['COUNTRY_REQUIRED'], { normalized: input.trim() })
   }

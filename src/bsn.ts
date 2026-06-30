@@ -1,5 +1,5 @@
 import type { ValidationResult } from './types.js'
-import { clean, fail, ok } from './util.js'
+import { clean, fail, isBlank, ok } from './util.js'
 
 /**
  * Validate a Dutch BSN (Burgerservicenummer) with the 11-proof (elfproef).
@@ -8,7 +8,7 @@ import { clean, fail, ok } from './util.js'
  * sum uses [9,8,7,6,5,4,3,2,-1] and must be divisible by 11.
  */
 export function validateBSN(input: string): ValidationResult {
-  if (!input || !input.trim()) return fail('bsn', input, ['EMPTY_INPUT'])
+  if (isBlank(input)) return fail('bsn', input, ['EMPTY_INPUT'])
 
   const value = clean(input)
   if (!/^\d{8,9}$/.test(value)) {

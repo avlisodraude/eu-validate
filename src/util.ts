@@ -5,6 +5,15 @@ export function clean(input: string): string {
   return input.replace(/[\s.\-/]/g, '').toUpperCase()
 }
 
+/**
+ * True when input is not a usable, non-empty string. Guards every validator's
+ * entry point so a plain-JS caller passing `null`/`undefined`/a number gets a
+ * clean `EMPTY_INPUT` result instead of a thrown TypeError from `.trim()`.
+ */
+export function isBlank(input: unknown): boolean {
+  return typeof input !== 'string' || input.trim() === ''
+}
+
 /** Build a failing result in one call. */
 export function fail(
   type: IdentifierType,

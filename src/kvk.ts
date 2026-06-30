@@ -1,5 +1,5 @@
 import type { ValidationResult } from './types.js'
-import { clean, fail, ok } from './util.js'
+import { clean, fail, isBlank, ok } from './util.js'
 
 /**
  * Validate the *format* of a Dutch KvK (Chamber of Commerce) number: 8 digits.
@@ -9,7 +9,7 @@ import { clean, fail, ok } from './util.js'
  * use the Cloud client's `lookupKvK()`.
  */
 export function validateKvK(input: string): ValidationResult {
-  if (!input || !input.trim()) return fail('kvk', input, ['EMPTY_INPUT'])
+  if (isBlank(input)) return fail('kvk', input, ['EMPTY_INPUT'])
 
   const value = clean(input)
   if (!/^\d{8}$/.test(value)) {
