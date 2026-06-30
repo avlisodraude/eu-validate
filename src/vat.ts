@@ -207,7 +207,20 @@ export function validateVAT(input: string): ValidationResult {
         checksum: false,
       })
     }
-    // result === true → checksum passed; result === null → not formula-checkable (e.g. FR alphabetic key)
+    if (result === null) {
+      // Not formula-checkable offline (e.g. FR alphabetic key). Format is valid,
+      // so this is a non-blocking informational code, not a failure.
+      return {
+        valid: true,
+        input,
+        normalized,
+        country,
+        type: 'vat',
+        checks: { format: true, checksum: null },
+        errors: ['CHECKSUM_NOT_VERIFIABLE'],
+      }
+    }
+    // result === true → checksum passed.
     return ok('vat', input, normalized, country, result)
   }
 

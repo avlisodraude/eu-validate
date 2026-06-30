@@ -56,6 +56,22 @@ describe('validateVAT — format-only countries', () => {
   })
 })
 
+describe('validateVAT — FR alphabetic key (CHECKSUM_NOT_VERIFIABLE)', () => {
+  it('is valid but flags the checksum as not verifiable offline', () => {
+    const r = validateVAT('FRXX123456789')
+    expect(r.valid).toBe(true)
+    expect(r.checks.format).toBe(true)
+    expect(r.checks.checksum).toBeNull()
+    expect(r.errors).toEqual(['CHECKSUM_NOT_VERIFIABLE'])
+  })
+
+  it('still rejects a numeric key with a wrong checksum as CHECKSUM_FAILED', () => {
+    const r = validateVAT('FR00303265045') // numeric key, wrong value
+    expect(r.valid).toBe(false)
+    expect(r.errors).toContain('CHECKSUM_FAILED')
+  })
+})
+
 describe('validateVAT — errors', () => {
   it('flags empty input', () => {
     expect(validateVAT('').errors).toContain('EMPTY_INPUT')

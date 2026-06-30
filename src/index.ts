@@ -4,6 +4,7 @@ export { validateBSN } from './bsn.js'
 export { validateKvK } from './kvk.js'
 export { validatePostalCode } from './postal.js'
 export { validate, type ValidateOptions } from './validate.js'
+export { isValid, assertValid, ValidationError } from './helpers.js'
 
 export {
   EU_COUNTRIES,

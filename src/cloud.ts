@@ -57,6 +57,48 @@ export interface EuValidateCloudClient {
   lookupKvK(kvkNumber: string): Promise<KvkLookupResult>
 }
 
+/** Thrown when the Cloud client is called before the Phase 3 hosted API has shipped. */
+export class CloudNotAvailableError extends Error {
+  constructor() {
+    super(
+      '@alosha/eu-validate/cloud: the hosted API has not shipped yet (Phase 3). ' +
+        'This client\'s surface is stable for future use, but calling it today would only ' +
+        'fail against a non-existent endpoint. Track availability at https://eu-validate.alosha.dev.'
+    )
+    this.name = 'CloudNotAvailableError'
+  }
+}
+
+/** Thrown when a Cloud request exceeds `timeoutMs` without a response. */
+export class CloudTimeoutError extends Error {
+  /** The timeout, in milliseconds, that was exceeded. */
+  readonly timeoutMs: number
+
+  constructor(timeoutMs: number) {
+    super(`eu-validate cloud request timed out after ${timeoutMs}ms`)
+    this.name = 'CloudTimeoutError'
+    this.timeoutMs = timeoutMs
+  }
+}
+
+/** Thrown when the hosted API responds with a non-2xx status. */
+export class CloudApiError extends Error {
+  /** HTTP status code returned by the API. */
+  readonly status: number
+  /** HTTP status text returned by the API. */
+  readonly statusText: string
+  /** Best-effort parsed response body (JSON if possible, else text, else null). */
+  readonly body: unknown
+
+  constructor(status: number, statusText: string, body: unknown) {
+    super(`eu-validate cloud request failed: ${status} ${statusText}`)
+    this.name = 'CloudApiError'
+    this.status = status
+    this.statusText = statusText
+    this.body = body
+  }
+}
+
 /**
  * Create a Cloud client bound to an API key.
  *
@@ -73,26 +115,40 @@ export function createClient(options: CloudClientOptions): EuValidateCloudClient
 
   async function request<T>(path: string, body: unknown): Promise<T> {
     if (!CLOUD_API_LIVE) {
-      throw new Error(
-        '@alosha/eu-validate/cloud: the hosted API has not shipped yet (Phase 3). ' +
-          'This client\'s surface is stable for future use, but calling it today would only ' +
-          'fail against a non-existent endpoint. Track availability at https://eu-validate.alosha.dev.'
-      )
+      throw new CloudNotAvailableError()
     }
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
     try {
-      const res = await fetch(`${baseUrl}${path}`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${options.apiKey}`,
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      })
+      let res: Response
+      try {
+        res = await fetch(`${baseUrl}${path}`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${options.apiKey}`,
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        })
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          throw new CloudTimeoutError(timeoutMs)
+        }
+        throw err
+      }
       if (!res.ok) {
-        throw new Error(`eu-validate cloud request failed: ${res.status} ${res.statusText}`)
+        let parsedBody: unknown = null
+        try {
+          parsedBody = await res.json()
+        } catch {
+          try {
+            parsedBody = await res.text()
+          } catch {
+            parsedBody = null
+          }
+        }
+        throw new CloudApiError(res.status, res.statusText, parsedBody)
       }
       return (await res.json()) as T
     } finally {

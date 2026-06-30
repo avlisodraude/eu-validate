@@ -15,6 +15,7 @@ export type ErrorCode =
   | 'UNSUPPORTED_COUNTRY'
   | 'CHECKSUM_FAILED'
   | 'COUNTRY_REQUIRED'
+  | 'CHECKSUM_NOT_VERIFIABLE'
 
 /**
  * The single result shape returned by every offline validator.
@@ -39,7 +40,14 @@ export interface ValidationResult {
     format: boolean
     checksum: boolean | null
   }
-  /** Machine-readable error codes; empty when `valid` is true. */
+  /**
+   * Machine-readable error codes. Empty when `valid` is true, EXCEPT for the
+   * informational `CHECKSUM_NOT_VERIFIABLE` code: a result can be `valid: true`
+   * with that single code present when the identifier is structurally well
+   * formed but this specific value's checksum couldn't be computed offline
+   * (e.g. a French VAT number with an alphabetic key). Check `checks.checksum`
+   * (`null`) if you need to branch on "verified" vs. "format-only".
+   */
   errors: ErrorCode[]
 }
 

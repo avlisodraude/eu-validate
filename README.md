@@ -67,6 +67,28 @@ import { validate } from '@alosha/eu-validate'
 validate('1011 AB', { type: 'postalCode', country: 'NL' })
 ```
 
+### Convenience helpers
+
+For call sites that want to branch or throw instead of checking `.valid` by hand:
+
+```ts
+import { validateIBAN, isValid, assertValid, ValidationError } from '@alosha/eu-validate'
+
+const r = validateIBAN('NL91ABNA0417164300')
+
+if (isValid(r)) {
+  // r narrowed to valid: true
+}
+
+try {
+  const checked = assertValid(validateIBAN(input)) // throws ValidationError if invalid
+} catch (e) {
+  if (e instanceof ValidationError) {
+    console.log(e.result.errors) // the failing ValidationResult
+  }
+}
+```
+
 ## Production recipes
 
 Real problems, complete solutions — copy, paste, ship.
@@ -141,6 +163,8 @@ await eu.lookupKvK('69599084')       // → KvK company data
 
 > The Cloud API ships in a later release. The client surface is stable today.
 
+Calling `verifyVAT()` / `lookupKvK()` today throws a typed `CloudNotAvailableError` (rather than a generic `Error`) so you can catch it specifically while the hosted API is still in Phase 3. Once it ships, the client throws `CloudTimeoutError` (request exceeded `timeoutMs`) or `CloudApiError` (non-2xx response, with `status`/`statusText`/`body`) — all three are exported from `@alosha/eu-validate/cloud`.
+
 ## Coverage (V1)
 
 - **VAT checksum:** NL · BE · DE · FR · ES · IT · LU · PT · FI · DK · SE · PL · SI · EE (14 countries)
@@ -154,6 +178,14 @@ Country checksum coverage grows release over release.
 ### Note on NL VAT
 
 The NL checksum uses the 11-proof on the first 9 digits, which validates company (legal-entity) numbers. Some sole-trader BTW-id numbers issued since 2020 are randomized and won't satisfy the 11-proof — use the Cloud `verifyVAT()` to confirm those against VIES.
+
+### Note on Greece: GR vs EL
+
+Greece's ISO 3166-1 country code is `GR`, but its VAT prefix is `EL`. `validateVAT()` accepts a `GR...` input and normalizes it to `EL...` — so a Greek VAT result's `country` field is `'EL'`. `validateIBAN()` (and `validatePostalCode()`) instead use the ISO code, so a Greek IBAN/postal result's `country` field is `'GR'`. This isn't a bug — VIES itself uses `EL` — but if you're cross-referencing a VAT result against an IBAN result for the same Greek business, compare on `'EL' === 'GR' ? ...` logic rather than assuming the `country` fields match.
+
+### Note on FR VAT and `CHECKSUM_NOT_VERIFIABLE`
+
+French VAT numbers can have either a numeric key (formula-checkable) or an alphabetic key (not formula-checkable offline). For the alphabetic-key case, `validateVAT()` returns `valid: true` with `checks.checksum: null` and `errors: ['CHECKSUM_NOT_VERIFIABLE']` — the format is confirmed correct, but the checksum itself couldn't be confirmed. This is the one case where `errors` is non-empty on a valid result; check `checks.checksum === null` if you want to distinguish "checksum verified" from "checksum not checkable" programmatically.
 
 ## Develop
 

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New `CHECKSUM_NOT_VERIFIABLE` error code: `validateVAT()` now returns
+  `valid: true` with `checks.checksum: null` and `errors: ['CHECKSUM_NOT_VERIFIABLE']`
+  for FR VAT numbers with an alphabetic key (previously indistinguishable from
+  a checksum-verified result — both had `errors: []`).
+- Typed Cloud client errors (`@alosha/eu-validate/cloud`): `CloudNotAvailableError`,
+  `CloudTimeoutError`, `CloudApiError` replace the generic `Error` previously
+  thrown on Phase-3-not-shipped / request timeout / non-2xx response, so
+  callers can `catch` and branch on a specific error type.
+- `isValid()` and `assertValid()` convenience helpers, exported from the main
+  entry: `isValid()` narrows a `ValidationResult` to `valid: true`;
+  `assertValid()` returns the same narrowed result or throws `ValidationError`
+  (which carries the failing `result`).
+- README: documented the `GR`/`EL` country-code mismatch between VAT results
+  (`EL`) and IBAN/postal-code results (`GR`) for Greece, and the new
+  `CHECKSUM_NOT_VERIFIABLE` behavior for FR VAT alphabetic keys.
+
 ### Changed
 
 - `package.json` now declares `"sideEffects": false`, so bundlers can safely
