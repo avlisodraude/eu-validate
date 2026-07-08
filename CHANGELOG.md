@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `@alosha/eu-validate/cloud` no longer gates requests behind a compile-time
+  `CLOUD_API_LIVE` flag — `request()` now hits the hosted endpoint for real,
+  so the hosted API can go live without requiring users to upgrade the
+  package. A 404 response or a connection failure at the DNS/socket level
+  (endpoint not deployed yet) is still translated into `CloudNotAvailableError`
+  so callers keep one obvious error type for "not live yet"; `CloudTimeoutError`
+  and `CloudApiError` behavior is unchanged for all other cases.
+
 ### Fixed
 
 - NL VAT false negative: `validateVAT()` was rejecting valid sole-trader

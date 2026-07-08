@@ -176,7 +176,7 @@ export async function checkVat(input: string) {
 }
 ```
 
-**Why it works:** `verifyVAT()` throws typed errors instead of a generic `Error`, so a Cloud outage or the not-yet-shipped Phase 3 endpoint never gets confused with "the VAT number is wrong." The offline checksum already did the hard rejection work, so every Cloud failure mode here degrades to "unconfirmed" instead of blocking the user.
+**Why it works:** `verifyVAT()` throws typed errors instead of a generic `Error`, so a Cloud outage or a not-yet-deployed hosted endpoint never gets confused with "the VAT number is wrong." The offline checksum already did the hard rejection work, so every Cloud failure mode here degrades to "unconfirmed" instead of blocking the user.
 
 ### Reject malformed identifiers at the edge of your API
 
@@ -288,9 +288,9 @@ await eu.verifyVAT('NL123456782B01') // → VIES result
 await eu.lookupKvK('69599084')       // → KvK company data
 ```
 
-> The Cloud API ships in a later release. The client surface is stable today.
+> The Cloud API is rolling out. The client surface is stable today, and requests hit the real hosted endpoint — no package upgrade needed once it's live for your account.
 
-Calling `verifyVAT()` / `lookupKvK()` today throws a typed `CloudNotAvailableError` (rather than a generic `Error`) so you can catch it specifically while the hosted API is still in Phase 3. Once it ships, the client throws `CloudTimeoutError` (request exceeded `timeoutMs`) or `CloudApiError` (non-2xx response, with `status`/`statusText`/`body`) — all three are exported from `@alosha/eu-validate/cloud`.
+If the hosted endpoint isn't deployed yet (404, or the connection fails at the DNS/socket level), `verifyVAT()` / `lookupKvK()` throw a typed `CloudNotAvailableError` (rather than a generic `Error`) so you can catch it specifically. Once live, the client throws `CloudTimeoutError` (request exceeded `timeoutMs`) or `CloudApiError` (non-2xx response, with `status`/`statusText`/`body`) — all three are exported from `@alosha/eu-validate/cloud`.
 
 ## Coverage (V1)
 

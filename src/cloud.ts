@@ -10,16 +10,12 @@
  * The offline validators in the main entry never import this file, so the
  * zero-dependency / no-network guarantee of `@alosha/eu-validate` holds.
  *
- * V1 status: client surface is defined; the hosted endpoints ship in Phase 3.
- * Until then, `request()` fails fast with a clear message instead of letting
- * calls hit a real but not-yet-implemented endpoint on eu-validate.alosha.dev.
+ * V1 status: `request()` hits the real hosted endpoint. If the endpoint isn't
+ * deployed yet (404, or the connection fails at the DNS/socket level), that's
+ * translated into `CloudNotAvailableError` so callers have one obvious error
+ * type for "not live yet" rather than needing to distinguish network failure
+ * modes themselves.
  */
-
-/**
- * Flip to `true` once the Phase 3 hosted endpoints
- * (`/api/v1/vat/verify`, `/api/v1/kvk/lookup`) are live.
- */
-const CLOUD_API_LIVE = false
 
 export interface CloudClientOptions {
   apiKey: string
@@ -57,13 +53,13 @@ export interface EuValidateCloudClient {
   lookupKvK(kvkNumber: string): Promise<KvkLookupResult>
 }
 
-/** Thrown when the Cloud client is called before the Phase 3 hosted API has shipped. */
+/** Thrown when the hosted API has not shipped yet (endpoint missing or unreachable). */
 export class CloudNotAvailableError extends Error {
   constructor() {
     super(
-      '@alosha/eu-validate/cloud: the hosted API has not shipped yet (Phase 3). ' +
-        'This client\'s surface is stable for future use, but calling it today would only ' +
-        'fail against a non-existent endpoint. Track availability at https://eu-validate.alosha.dev.'
+      '@alosha/eu-validate/cloud: the hosted API is not available yet. ' +
+        'This client\'s surface is stable for future use, but the hosted endpoint isn\'t ' +
+        'deployed yet. Track availability at https://eu-validate.alosha.dev.'
     )
     this.name = 'CloudNotAvailableError'
   }
@@ -114,9 +110,6 @@ export function createClient(options: CloudClientOptions): EuValidateCloudClient
   const timeoutMs = options.timeoutMs ?? 10000
 
   async function request<T>(path: string, body: unknown): Promise<T> {
-    if (!CLOUD_API_LIVE) {
-      throw new CloudNotAvailableError()
-    }
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
     try {
@@ -135,7 +128,11 @@ export function createClient(options: CloudClientOptions): EuValidateCloudClient
         if (err instanceof Error && err.name === 'AbortError') {
           throw new CloudTimeoutError(timeoutMs)
         }
-        throw err
+        // Connection failed at the DNS/socket level — the endpoint isn't deployed yet.
+        throw new CloudNotAvailableError()
+      }
+      if (res.status === 404) {
+        throw new CloudNotAvailableError()
       }
       if (!res.ok) {
         let parsedBody: unknown = null
