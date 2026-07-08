@@ -304,7 +304,7 @@ Country checksum coverage grows release over release.
 
 ### Note on NL VAT
 
-The NL checksum uses the 11-proof on the first 9 digits, which validates company (legal-entity) numbers. Some sole-trader BTW-id numbers issued since 2020 are randomized and won't satisfy the 11-proof — use the Cloud `verifyVAT()` to confirm those against VIES.
+The NL checksum validates both number styles offline. Company (legal-entity) numbers pass the 11-proof on the first 9 digits. Sole-trader BTW-id numbers issued since 2020 are randomized and deliberately fail the 11-proof, but instead satisfy a mod-97 check over the full `NL`-prefixed string (letters converted to digits, A=10..Z=35). `checkNL` accepts a number if *either* check passes.
 
 ### Note on Greece: GR vs EL
 

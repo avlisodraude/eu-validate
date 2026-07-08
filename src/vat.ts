@@ -1,15 +1,21 @@
 import { VAT_CHECKSUM_SUPPORTED, VAT_PATTERNS } from './countries.js'
 import type { ValidationResult } from './types.js'
-import { clean, fail, isBlank, ok } from './util.js'
+import { clean, fail, isBlank, lettersToDigits, mod97, ok } from './util.js'
 
 const DNI_LETTERS = 'TRWAGMYFPDXBNJZSQVHLCKE'
 
-/** NL: legal-entity VAT — first 9 digits pass the 11-proof. (Sole-trader BTW-id may not; see README.) */
-function checkNL(body: string): boolean {
+/**
+ * NL: legal-entity VAT — first 9 digits pass the 11-proof. Sole-trader BTW-ids
+ * issued since Jan 2020 deliberately fail the 11-proof but instead satisfy a
+ * mod-97 check over the full "NL"+body string (letters converted to digits,
+ * A=10..Z=35). Either check passing is valid.
+ */
+function checkNL(body: string, normalized: string): boolean {
   const digits = body.slice(0, 9).split('').map(Number)
   const weights = [9, 8, 7, 6, 5, 4, 3, 2, -1]
   const sum = digits.reduce((acc, d, i) => acc + d * weights[i], 0)
-  return sum % 11 === 0
+  if (sum % 11 === 0) return true
+  return mod97(lettersToDigits(normalized)) === 1
 }
 
 /** BE: 97 - (first 8 digits mod 97) must equal the last 2 digits. */
@@ -153,7 +159,7 @@ function checkEE(body: string): boolean {
   return check === Number(body[8])
 }
 
-const CHECKSUMS: Record<string, (body: string) => boolean | null> = {
+const CHECKSUMS: Record<string, (body: string, normalized: string) => boolean | null> = {
   NL: checkNL,
   BE: checkBE,
   DE: checkDE,
@@ -198,7 +204,7 @@ export function validateVAT(input: string): ValidationResult {
   }
 
   if (VAT_CHECKSUM_SUPPORTED.includes(country)) {
-    const result = CHECKSUMS[country](body)
+    const result = CHECKSUMS[country](body, normalized)
     if (result === false) {
       return fail('vat', input, ['CHECKSUM_FAILED'], {
         normalized,

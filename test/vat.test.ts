@@ -41,6 +41,29 @@ describe('validateVAT — checksum countries', () => {
   })
 })
 
+describe('validateVAT — NL sole-trader BTW-id (mod-97)', () => {
+  it('accepts a new-style sole-trader BTW-id that fails the 11-proof but passes mod-97', () => {
+    const r = validateVAT('NL123456789B13')
+    expect(r.valid).toBe(true)
+    expect(r.checks.format).toBe(true)
+    expect(r.checks.checksum).toBe(true)
+    expect(r.errors).toEqual([])
+  })
+
+  it('still accepts a legal-entity number that passes the 11-proof', () => {
+    const r = validateVAT('NL123456782B01')
+    expect(r.valid).toBe(true)
+    expect(r.checks.checksum).toBe(true)
+  })
+
+  it('rejects a number failing both the 11-proof and mod-97', () => {
+    const r = validateVAT('NL123456789B12')
+    expect(r.valid).toBe(false)
+    expect(r.checks.checksum).toBe(false)
+    expect(r.errors).toContain('CHECKSUM_FAILED')
+  })
+})
+
 describe('validateVAT — format-only countries', () => {
   it('accepts a well-formed AT number with checksum null', () => {
     const r = validateVAT('ATU12345678')

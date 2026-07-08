@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- NL VAT false negative: `validateVAT()` was rejecting valid sole-trader
+  BTW-id numbers issued since Jan 2020, which deliberately fail the 11-proof
+  (elfproef) on the first 9 digits. `checkNL` now also accepts a number when
+  a mod-97 check over the full `NL`-prefixed string passes, so both
+  legal-entity and sole-trader BTW-id styles validate correctly offline.
+
 ## [0.3.0] - 2026-06-30
 
 ### Added
