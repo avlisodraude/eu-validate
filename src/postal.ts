@@ -1,4 +1,4 @@
-import { POSTAL_PATTERNS } from './countries.js'
+import { EU_COUNTRIES, POSTAL_PATTERNS } from './countries.js'
 import type { PostalCodeOptions, ValidationResult } from './types.js'
 import { fail, isBlank, ok } from './util.js'
 
@@ -13,15 +13,27 @@ export function validatePostalCode(input: string, options: PostalCodeOptions): V
   }
 
   const country = options.country.toUpperCase()
+  const value = input.trim().toUpperCase()
   const pattern = POSTAL_PATTERNS[country]
+
   if (!pattern) {
-    return fail('postalCode', input, ['UNSUPPORTED_COUNTRY'], {
-      normalized: input.trim(),
+    if (!EU_COUNTRIES.includes(country)) {
+      return fail('postalCode', input, ['UNSUPPORTED_COUNTRY'], { normalized: value, country })
+    }
+    // A real EU country, but we don't have a pattern for it yet. Don't
+    // hard-fail on missing coverage — mirror checkFR's "checkable format,
+    // unverifiable checksum" handling: valid, informational-only error code.
+    return {
+      valid: true,
+      input,
+      normalized: value,
       country,
-    })
+      type: 'postalCode',
+      checks: { format: true, checksum: null },
+      errors: ['CHECKSUM_NOT_VERIFIABLE'],
+    }
   }
 
-  const value = input.trim().toUpperCase()
   if (!pattern.test(value)) {
     return fail('postalCode', input, ['INVALID_FORMAT'], { normalized: value, country })
   }

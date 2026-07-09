@@ -76,8 +76,11 @@ export const IBAN_LENGTHS: Record<CountryCode, number> = {
   SI: 19, SK: 24, SM: 27, TN: 24, TR: 26, UA: 29, VG: 24, XK: 20,
 }
 
-/** Postal-code formats (V1 core set). */
-export const POSTAL_PATTERNS: Record<CountryCode, RegExp> = {
+/**
+ * Postal-code formats (V1 core set). Only six countries have a pattern so far —
+ * indexing with a country outside this set legitimately yields `undefined`.
+ */
+export const POSTAL_PATTERNS: Partial<Record<CountryCode, RegExp>> = {
   NL: /^\d{4} ?[A-Z]{2}$/i,
   DE: /^\d{5}$/,
   FR: /^\d{5}$/,

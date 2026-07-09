@@ -46,8 +46,17 @@ describe('validatePostalCode', () => {
     expect(validatePostalCode('1011AB', { country: '' }).errors).toContain('COUNTRY_REQUIRED')
   })
 
-  it('flags unsupported country', () => {
-    expect(validatePostalCode('1011AB', { country: 'XX' }).errors).toContain('UNSUPPORTED_COUNTRY')
+  it('flags an unknown (non-EU) country code as unsupported', () => {
+    const r = validatePostalCode('1011AB', { country: 'XX' })
+    expect(r.valid).toBe(false)
+    expect(r.errors).toContain('UNSUPPORTED_COUNTRY')
+  })
+
+  it('does not hard-fail an EU country with no postal pattern implemented (IE)', () => {
+    const r = validatePostalCode('D02 AF30', { country: 'IE' })
+    expect(r.valid).toBe(true)
+    expect(r.checks.checksum).toBeNull()
+    expect(r.errors).toEqual(['CHECKSUM_NOT_VERIFIABLE'])
   })
 })
 

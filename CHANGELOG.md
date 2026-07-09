@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking (type-level, targeting 0.4.0):** `POSTAL_PATTERNS` is now typed
+  `Partial<Record<CountryCode, RegExp>>` instead of `Record<CountryCode, RegExp>`,
+  reflecting that only six countries actually have a pattern — indexing it
+  directly for any other country now correctly types as `RegExp | undefined`.
+  `validatePostalCode()` no longer hard-fails a real EU country just because
+  it lacks a pattern: it now returns `valid: true` with `checks.checksum: null`
+  and `errors: ['CHECKSUM_NOT_VERIFIABLE']` (mirroring the FR VAT alphabetic-key
+  handling), reserving `UNSUPPORTED_COUNTRY` for country codes outside the EU-27.
 - `@alosha/eu-validate/cloud` no longer gates requests behind a compile-time
   `CLOUD_API_LIVE` flag — `request()` now hits the hosted endpoint for real,
   so the hosted API can go live without requiring users to upgrade the
