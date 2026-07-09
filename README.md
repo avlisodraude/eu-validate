@@ -335,7 +335,7 @@ Get in touch at [alosha.dev/support](https://alosha.dev/support).
 
 ## License
 
-MIT © Eduardo Silvanavarrete
+MIT © Eduardo Silva Navarrete
 
 ---
 
