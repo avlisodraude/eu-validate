@@ -8,6 +8,6 @@
     "start": "node index.mjs"
   },
   "dependencies": {
-    "@alosha/eu-validate": "^0.3.0"
+    "@alosha/eu-validate": "^0.4.0"
   }
 }
