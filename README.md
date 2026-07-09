@@ -1,6 +1,6 @@
 # @alosha/eu-validate
 
-Validate EU **VAT**, **IBAN**, and Dutch **BSN/KvK** numbers — offline, zero-dependency, fully typed. Add live **VIES + KvK** lookups with one API key.
+Validate EU **VAT**, **IBAN**, and Dutch **BSN/KvK** numbers — offline, zero-dependency, fully typed. VAT checksums for 22 of 27 EU countries. Live **VIES + KvK** lookups coming soon.
 
 [![npm version](https://img.shields.io/npm/v/@alosha/eu-validate)](https://www.npmjs.com/package/@alosha/eu-validate)
 [![npm downloads](https://img.shields.io/npm/dm/@alosha/eu-validate)](https://www.npmjs.com/package/@alosha/eu-validate)
@@ -15,7 +15,7 @@ Validate EU **VAT**, **IBAN**, and Dutch **BSN/KvK** numbers — offline, zero-d
 - 🌍 **Format validation for all 27 EU VAT formats** + SEPA IBAN lengths.
 - 🔠 **One consistent result shape** across every identifier type.
 - 🧩 **Tree-shakeable** ESM + CJS, TypeScript types included.
-- ☁️ **Optional Cloud client** for VIES registration checks and KvK company lookups.
+- ☁️ **Cloud client (coming soon)** for VIES registration checks and KvK company lookups — the hosted API is not yet available.
 
 ## Install
 
