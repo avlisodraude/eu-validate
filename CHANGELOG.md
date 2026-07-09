@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0] - 2026-06-30
 
+> **Note on the missing 0.2.0.** A `v0.2.0` tag exists in git, but 0.2.0 was never
+> published to npm — the registry goes 0.1.0 → 0.3.0. The changes listed below were
+> developed under the 0.2.0 heading, then released as 0.3.0; this section is their
+> single, correct home. The tag is retained for historical accuracy and points at the
+> commit that bumped `package.json` to 0.2.0.
+
 ### Added
 
 - New `CHECKSUM_NOT_VERIFIABLE` error code: `validateVAT()` now returns
