@@ -1,7 +1,7 @@
 {
   "name": "@alosha/eu-validate",
   "version": "0.4.0",
-  "description": "Validate EU VAT, IBAN, and Dutch BSN/KvK numbers — offline, zero-dependency, fully typed. VAT checksums for 22 of 27 EU countries. Live VIES + KvK lookups coming soon.",
+  "description": "Validate EU VAT, IBAN, and Dutch BSN/KvK numbers — offline, zero-dependency, fully typed. VAT checksums for all 27 EU countries. Live VIES + KvK lookups coming soon.",
   "keywords": [
     "vat",
     "vat-validation",

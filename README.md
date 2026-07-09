@@ -1,6 +1,6 @@
 # @alosha/eu-validate
 
-Validate EU **VAT**, **IBAN**, and Dutch **BSN/KvK** numbers — offline, zero-dependency, fully typed. VAT checksums for 22 of 27 EU countries. Live **VIES + KvK** lookups coming soon.
+Validate EU **VAT**, **IBAN**, and Dutch **BSN/KvK** numbers — offline, zero-dependency, fully typed. VAT checksums for all 27 EU countries. Live **VIES + KvK** lookups coming soon.
 
 [![npm version](https://img.shields.io/npm/v/@alosha/eu-validate)](https://www.npmjs.com/package/@alosha/eu-validate)
 [![npm downloads](https://img.shields.io/npm/dm/@alosha/eu-validate)](https://www.npmjs.com/package/@alosha/eu-validate)
@@ -11,7 +11,7 @@ Validate EU **VAT**, **IBAN**, and Dutch **BSN/KvK** numbers — offline, zero-d
 **▶ [Try the live demo](https://eu-validate.alosha.dev/demo)** — validate VAT, IBAN, BSN, KvK and postal codes right in your browser. No install, nothing uploaded.
 
 - ✅ **Zero runtime dependencies** — pure, deterministic checks. Nothing is fetched.
-- 🧮 **Real checksums**, not just regex — VAT for 22 of the 27 EU countries, IBAN (ISO 13616 mod-97), Dutch BSN (11-proof).
+- 🧮 **Real checksums**, not just regex — VAT for all 27 EU countries, IBAN (ISO 13616 mod-97), Dutch BSN (11-proof).
 - 🌍 **Format validation for all 27 EU VAT formats** + SEPA IBAN lengths.
 - 🔠 **One consistent result shape** across every identifier type.
 - 🧩 **Tree-shakeable** ESM + CJS, TypeScript types included.
@@ -294,13 +294,12 @@ If the hosted endpoint isn't deployed yet (404, or the connection fails at the D
 
 ## Coverage (V1)
 
-- **VAT checksum:** NL · BE · DE · FR · ES · IT · LU · PT · FI · DK · SE · PL · SI · EE · AT · CY · CZ · HR · IE · LT · LV · SK (22 countries)
-- **VAT format-only:** the rest of the EU-27 (`checks.checksum` is `null`)
+- **VAT checksum:** all 27 EU countries. `checks.checksum` is `null` only for
+  per-number sub-cases with no offline-checkable formula (FR alphabetic keys,
+  CZ pre-1954 birth numbers, LV natural persons).
 - **IBAN:** all SEPA / IBAN-registry countries
 - **BSN / KvK:** 🇳🇱 NL
 - **Postal codes:** NL, DE, FR, BE, ES, IT
-
-Country checksum coverage grows release over release.
 
 ### Note on NL VAT
 
