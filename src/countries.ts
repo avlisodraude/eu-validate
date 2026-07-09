@@ -39,11 +39,13 @@ export const VAT_PATTERNS: Record<CountryCode, RegExp> = {
   LT: /^(?:\d{7}1\d|\d{10}1\d)$/,
   LU: /^\d{8}$/,
   LV: /^\d{11}$/,
-  MT: /^\d{8}$/,
+  // No leading zero (stdnum and jsvat agree).
+  MT: /^[1-9]\d{7}$/,
   NL: /^\d{9}B\d{2}$/,
   PL: /^\d{10}$/,
   PT: /^\d{9}$/,
-  RO: /^\d{2,10}$/,
+  // 2-10 digits, no leading zero (stdnum and jsvat agree).
+  RO: /^[1-9]\d{1,9}$/,
   SE: /^\d{12}$/,
   SI: /^\d{8}$/,
   // d1 != 0; d3 in the union of both checksum sources' allow-sets (they
@@ -52,13 +54,16 @@ export const VAT_PATTERNS: Record<CountryCode, RegExp> = {
 }
 
 /**
- * Countries with full checksum validation.
- * Everything else in the EU-27 is format-only (checksum: null) for now.
+ * Countries with full checksum validation — all 27 EU member states.
+ * `checksum: null` now only occurs for per-number sub-cases that are not
+ * formula-checkable offline (FR alphabetic keys, CZ pre-1954 birth numbers,
+ * LV natural persons).
  */
 export const VAT_CHECKSUM_SUPPORTED: CountryCode[] = [
   'NL', 'BE', 'DE', 'FR', 'ES', 'IT',
   'LU', 'PT', 'FI', 'DK', 'SE', 'PL', 'SI', 'EE',
   'AT', 'CY', 'CZ', 'HR', 'IE', 'LT', 'LV', 'SK',
+  'BG', 'EL', 'HU', 'MT', 'RO',
 ]
 
 /**

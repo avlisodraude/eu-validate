@@ -56,6 +56,38 @@ describe('validateVAT — checksum countries', () => {
     ['SK (ESET)', 'SK2020317068'],
     ['SK (Tatra banka VAT group)', 'SK7020000944'],
     ['SK (appendix)', 'SK2022749619'],
+    ['BG (Kaufland & Co KD)', 'BG131129282'],
+    ['BG (Medical University of Sofia)', 'BG831385737'],
+    ['BG (Ontotext)', 'BG200356710'],
+    ['BG (ESO, exercises pass 2)', 'BG175201304'],
+    ['BG (Kaufland EOOD, exercises pass 2)', 'BG131058063'],
+    ['BG (UNWE, leading zeros)', 'BG000670602'],
+    ['BG (stdnum doctest)', 'BG175074752'],
+    ['BG (10-digit, IEES-BAS, others branch)', 'BG1226046182'],
+    ['BG (10-digit, NCIPD)', 'BG1223022223'],
+    ['EL (OTE)', 'EL094019245'],
+    ['EL (Hellenic Post)', 'EL094026421'],
+    ['EL (University of Ioannina)', 'EL090029284'],
+    ['EL (delivery.gr)', 'EL998708533'],
+    ['EL (Ubitech, 10 -> 0 collapse)', 'EL998908360'],
+    ['EL (Lamia Municipality, 10 -> 0 collapse)', 'EL997947640'],
+    ['EL (stdnum doctest)', 'EL094259216'],
+    ['HU (Wizz Air)', 'HU26648525'],
+    ['HU (Óbuda University, check digit 0)', 'HU19308760'],
+    ['HU (MATE)', 'HU15329767'],
+    ['HU (stdnum doctest)', 'HU12892312'],
+    ['MT (University of Malta)', 'MT12894031'],
+    ['MT (MITA)', 'MT19134013'],
+    ['MT (King)', 'MT18622630'],
+    ['MT (Epic Malta)', 'MT12135215'],
+    ['MT (Ministry for Finance)', 'MT17981218'],
+    ['MT (stdnum doctest)', 'MT11679112'],
+    ['RO (OMV Petrom, 7-digit padding)', 'RO1590082'],
+    ['RO (CEC Bank, 6-digit padding)', 'RO361897'],
+    ['RO (Dante International / eMAG)', 'RO14399840'],
+    ['RO (ASE Bucharest)', 'RO4433775'],
+    ['RO (Politehnica Bucharest)', 'RO14814742'],
+    ['RO (stdnum doctest, 10 -> 0 collapse)', 'RO18547290'],
   ]
 
   it.each(valid)('accepts a valid %s VAT number', (_label, vat) => {
@@ -94,18 +126,13 @@ describe('validateVAT — NL sole-trader BTW-id (mod-97)', () => {
   })
 })
 
-describe('validateVAT — format-only countries', () => {
-  it('accepts a well-formed BG number with checksum null', () => {
-    const r = validateVAT('BG123456789')
-    expect(r.valid).toBe(true)
-    expect(r.checks.format).toBe(true)
-    expect(r.checks.checksum).toBeNull()
-  })
-
-  it('maps Greek GR prefix to EL', () => {
-    const r = validateVAT('GR123456789')
+describe('validateVAT — GR/EL prefix mapping', () => {
+  it('maps the Greek GR prefix to EL and still checksum-validates the body', () => {
+    const r = validateVAT('GR094019245')
     expect(r.valid).toBe(true)
     expect(r.country).toBe('EL')
+    expect(r.normalized).toBe('EL094019245')
+    expect(r.checks.checksum).toBe(true)
   })
 })
 
@@ -157,6 +184,20 @@ describe('validateVAT — invalid checksum mutations (all checksum countries)', 
     ['CY', 'CY10259034P'], // d8 3->4
     ['SK', 'SK2020273894'],
     ['SK', 'SK2021273893'], // d4 0->1
+    ['BG (9-digit)', 'BG131129283'], // pass-1 r=2, got 3
+    ['BG (9-digit)', 'BG175074751'], // stdnum's own doctest mutation
+    ['BG (9-digit, pass-2 rejection)', 'BG175201305'], // pass 2 r=4, got 5
+    ['BG (10-digit, all three branches fail)', 'BG1226046183'],
+    ['BG (10-digit, all three branches fail)', 'BG1223022224'],
+    ['EL', 'EL094019246'], // check 5, got 6
+    ['EL', 'EL194019245'], // d1 0->1: S=1768, check 8
+    ['EL (collapse case)', 'EL998908361'], // check 0, got 1
+    ['HU', 'HU26648526'], // check 5, got 6
+    ['HU', 'HU26649525'], // d5 8->9: S=204, check 6
+    ['MT', 'MT12894032'], // pair 31, got 32
+    ['MT', 'MT19234013'], // d3 1->2: expected pair 7, got 13
+    ['RO', 'RO1590083'], // check 2, got 3
+    ['RO', 'RO24399840'], // d1 1->2: S=157, check 8, got 0
   ]
 
   it.each(invalidChecksum)('rejects a bad %s checksum', (_label, vat) => {
@@ -201,6 +242,26 @@ describe('validateVAT — invalid checksum mutations (all checksum countries)', 
     const r = validateVAT('SK2050273893') // d3 = 5
     expect(r.valid).toBe(false)
     expect(r.errors).toContain('INVALID_FORMAT')
+  })
+
+  it('rejects MT numbers with a leading zero as INVALID_FORMAT', () => {
+    const r = validateVAT('MT01234567')
+    expect(r.valid).toBe(false)
+    expect(r.errors).toContain('INVALID_FORMAT')
+  })
+
+  it('rejects RO numbers with a leading zero as INVALID_FORMAT', () => {
+    const r = validateVAT('RO0590082')
+    expect(r.valid).toBe(false)
+    expect(r.errors).toContain('INVALID_FORMAT')
+  })
+
+  it('rejects a near-mutation of a 10-digit BG number only when all three branches fail', () => {
+    // Spec 2's mutation-derivation warning: BG1226046189 LOOKS like a mutation of
+    // the valid BG1226046182 but is itself valid via the EGN branch — assert the
+    // union behaviour so a future "simplification" to one branch fails this test.
+    expect(validateVAT('BG1226046189').valid).toBe(true)
+    expect(validateVAT('BG1226046183').valid).toBe(false)
   })
 })
 

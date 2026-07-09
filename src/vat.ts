@@ -111,6 +111,53 @@ function checkAT(body: string): boolean {
   return (96 - sum) % 10 === Number(digits[7])
 }
 
+const BG_EGN_WEIGHTS = [2, 4, 8, 5, 10, 9, 7, 3, 6]
+const BG_PNF_WEIGHTS = [21, 19, 17, 13, 11, 9, 7, 3, 1]
+const BG_OTHER_WEIGHTS = [4, 3, 2, 7, 6, 5, 4, 3, 2]
+
+/**
+ * BG: 9-digit legal entities use a two-pass weighted mod-11 (weights 1..8, re-weighted to
+ * 3..10 when the first remainder is 10; only pass 2 can still collapse 10 -> 0). 10-digit
+ * numbers cover three populations and are valid when ANY branch's check digit matches:
+ * EGN (physical persons — also requires a real embedded birth date), PNF (foreigners) or
+ * "others" (misc BULSTAT entities). Both reference sources implement exactly this union.
+ */
+function checkBG(body: string): boolean {
+  if (body.length === 9) {
+    let r = weightedSum(body, [1, 2, 3, 4, 5, 6, 7, 8]) % 11
+    if (r === 10) r = weightedSum(body, [3, 4, 5, 6, 7, 8, 9, 10]) % 11
+    return r % 10 === Number(body[8])
+  }
+  const check = Number(body[9])
+  if (weightedSum(body, BG_EGN_WEIGHTS) % 11 % 10 === check && hasValidEgnDate(body)) {
+    return true
+  }
+  if (weightedSum(body, BG_PNF_WEIGHTS) % 10 === check) return true
+  // (11 - r) === 10 means no valid check digit exists for the "others" branch.
+  return (11 - (weightedSum(body, BG_OTHER_WEIGHTS) % 11)) % 11 === check
+}
+
+/**
+ * EGN embeds the birth date as YYMMDD with the century folded into the month: 21-32 means
+ * the 1800s, 41-52 the 2000s. Validated as a real calendar date (stdnum behaviour) — jsvat
+ * only range-checks the digits, but a date-invalid number usually falls through to the
+ * PNF/others branches anyway, so the strictness is rarely observable.
+ */
+function hasValidEgnDate(body: string): boolean {
+  let year = 1900 + Number(body.slice(0, 2))
+  let month = Number(body.slice(2, 4))
+  const day = Number(body.slice(4, 6))
+  if (month > 40) {
+    year += 100
+    month -= 40
+  } else if (month > 20) {
+    year -= 100
+    month -= 20
+  }
+  if (month < 1 || month > 12 || day < 1) return false
+  return day <= new Date(year, month, 0).getDate()
+}
+
 const CY_ODD_TRANSLATE = [1, 0, 5, 7, 9, 13, 15, 17, 19, 21] // digit -> translated value, 1st/3rd/5th/7th positions
 const CY_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -158,11 +205,30 @@ function checkCZ(body: string): boolean | null {
 }
 
 /**
+ * EL: weights are the powers of two 256..2 over the first 8 digits; check = S mod 11 mod 10
+ * (remainder 10 collapses to 0). Applies to every AFM; legacy 8-digit numbers must arrive
+ * zero-padded to 9 (the VIES canonical form). The EL/GR prefix mapping happens in
+ * validateVAT, not here — the body validates identically under either typed prefix.
+ */
+function checkEL(body: string): boolean {
+  return weightedSum(body, [256, 128, 64, 32, 16, 8, 4, 2]) % 11 % 10 === Number(body[8])
+}
+
+/**
  * HR: ISO 7064 MOD 11,10 over d1..d10 (OIB) — same iterative engine as DE, reused via
  * mod1110CheckDigit(). Applies to every OIB, legal and natural persons alike.
  */
 function checkHR(body: string): boolean {
   return mod1110CheckDigit(body.slice(0, 10)) === Number(body[10])
+}
+
+/**
+ * HU: weights [9,7,3,1,9,7,3] over the first 7 digits; check = (10 - S mod 10) mod 10.
+ * The EU VAT body is the first 8 digits of the domestic 11-digit adószám (xxxxxxxx-y-zz);
+ * the VAT-status/county suffix never appears in the EU form.
+ */
+function checkHU(body: string): boolean {
+  return (10 - (weightedSum(body, [9, 7, 3, 1, 9, 7, 3]) % 10)) % 10 === Number(body[7])
 }
 
 const IE_ALPHABET = 'WABCDEFGHIJKLMNOPQRSTUV'
@@ -219,6 +285,31 @@ function checkLV(body: string): boolean | null {
   if (r === 4) return false
   const check = (((3 - r) % 11) + 11) % 11
   return check === Number(body[10])
+}
+
+/**
+ * MT: weights [3,4,6,7,8,9] over d1..d6; the last TWO digits form one check value C, valid
+ * when (S + C) mod 37 === 0. This is stdnum's congruence form; jsvat instead requires the
+ * canonical representative C === 37 - (S mod 37), confining C to 1..37. The sources diverge
+ * only for pairs outside 1..37 — unobserved in real numbers — and the congruence never
+ * hard-fails a number the other source accepts (spec 2 recommendation). A leading zero is
+ * banned by VAT_PATTERNS (both sources agree).
+ */
+function checkMT(body: string): boolean {
+  return (weightedSum(body, [3, 4, 6, 7, 8, 9]) + Number(body.slice(6, 8))) % 37 === 0
+}
+
+/**
+ * RO: zero-pad everything before the check digit to 9 digits, weights [7,5,3,2,1,7,5,3,2];
+ * check = (10 * S) mod 11 mod 10 (remainder 10 collapses to 0). Bodies run 2-10 digits with
+ * no leading zero (enforced by VAT_PATTERNS). stdnum would additionally accept a 13-digit
+ * CNP personal code with a self-doubting comment; jsvat and the VIES format spec cap RO at
+ * 10 digits, so a CNP stays INVALID_FORMAT here (spec 2 recommendation).
+ */
+function checkRO(body: string): boolean {
+  const padded = body.slice(0, -1).padStart(9, '0')
+  const check = (10 * weightedSum(padded, [7, 5, 3, 2, 1, 7, 5, 3, 2])) % 11 % 10
+  return check === Number(body[body.length - 1])
 }
 
 /**
@@ -324,12 +415,18 @@ const CHECKSUMS: Record<string, (body: string, normalized: string) => boolean | 
   LT: checkLT,
   LV: checkLV,
   SK: checkSK,
+  BG: checkBG,
+  EL: checkEL,
+  HU: checkHU,
+  MT: checkMT,
+  RO: checkRO,
 }
 
 /**
- * Validate an EU VAT number offline: country prefix, structure, and (for the
- * countries listed in VAT_CHECKSUM_SUPPORTED) the checksum. All other EU-27
- * countries are format-only — `checks.checksum` is `null`.
+ * Validate an EU VAT number offline: country prefix, structure, and checksum —
+ * every EU-27 country has checksum validation. `checks.checksum` is `null` only
+ * for the documented per-number sub-cases that are not formula-checkable offline
+ * (FR alphabetic keys, CZ pre-1954 birth numbers, LV natural persons).
  *
  * This never asks VIES whether the number is *registered* — use the Cloud
  * client's `verifyVAT()` for that.
@@ -380,6 +477,7 @@ export function validateVAT(input: string): ValidationResult {
     return ok('vat', input, normalized, country, result)
   }
 
-  // Format-only country.
+  // Unreachable for the EU-27 (every country is in VAT_CHECKSUM_SUPPORTED);
+  // kept as a defensive fallback should a format-only country ever be added.
   return ok('vat', input, normalized, country, null)
 }

@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- VAT checksum validation for BG, EL, HU, MT, and RO — **every EU-27 member
+  state now has checksum validation** (27 of 27). No new `checksum: null`
+  sub-cases: all five are hard checksums for every syntactically valid number.
+  Algorithms cross-verified by executing python-stdnum 2.2 and jsvat 2.5.4
+  over every fixture; see `docs/vat-checksum-spec-2.md` for provenance.
+
+### Changed
+
+- `VAT_PATTERNS.MT` and `VAT_PATTERNS.RO` now reject a leading zero
+  (`MT01234567`, `RO0…` were previously format-valid). Both reference
+  implementations agree no real Maltese or Romanian number starts with 0.
+
 ## [0.4.0] - 2026-07-09
 
 ### Added
