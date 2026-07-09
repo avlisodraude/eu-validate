@@ -25,16 +25,20 @@ function checkBE(body: string): boolean {
   return 97 - (base % 97) === check
 }
 
-/** DE: iterative Modulo 11,10 — last digit is the computed check digit. */
-function checkDE(body: string): boolean {
+/** Iterative ISO 7064 MOD 11,10 check-digit computation (shared by DE and HR). */
+function mod1110CheckDigit(digits: string): number {
   let product = 10
-  for (let i = 0; i < 8; i++) {
-    let sum = (Number(body[i]) + product) % 10
+  for (const ch of digits) {
+    let sum = (Number(ch) + product) % 10
     if (sum === 0) sum = 10
     product = (2 * sum) % 11
   }
-  const check = (11 - product) % 10
-  return check === Number(body[8])
+  return (11 - product) % 10
+}
+
+/** DE: iterative Modulo 11,10 — last digit is the computed check digit. */
+function checkDE(body: string): boolean {
+  return mod1110CheckDigit(body.slice(0, 8)) === Number(body[8])
 }
 
 /** FR: key = (12 + 3 * (SIREN mod 97)) mod 97 when the key is numeric. Alphanumeric keys aren't formula-checkable. */
@@ -89,6 +93,144 @@ function checkIT(body: string): boolean {
     sum += d
   }
   return (10 - (sum % 10)) % 10 === Number(body[10])
+}
+
+/**
+ * AT: Luhn-variant weights [1,2,1,2,1,2,1] over d1..d7 (digit-sum reduction when a
+ * product exceeds 9); check = (96 - S) mod 10. Applies to every AT UID.
+ */
+function checkAT(body: string): boolean {
+  const digits = body.slice(1) // strip leading 'U'
+  const weights = [1, 2, 1, 2, 1, 2, 1]
+  let sum = 0
+  for (let i = 0; i < 7; i++) {
+    let p = Number(digits[i]) * weights[i]
+    if (p > 9) p -= 9
+    sum += p
+  }
+  return (96 - sum) % 10 === Number(digits[7])
+}
+
+const CY_ODD_TRANSLATE = [1, 0, 5, 7, 9, 13, 15, 17, 19, 21] // digit -> translated value, 1st/3rd/5th/7th positions
+const CY_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+/**
+ * CY: odd positions (1st/3rd/5th/7th) translate through a fixed table, even positions
+ * count at face value; check letter = alphabet[S mod 26]. Only the '12' leading prefix
+ * is banned (enforced by VAT_PATTERNS) — sources disagree on also banning 6/7/8, and
+ * the spec's real-world fixtures don't settle it, so we don't hard-reject those.
+ */
+function checkCY(body: string): boolean {
+  let sum = 0
+  for (let i = 0; i < 8; i++) {
+    const d = Number(body[i])
+    sum += i % 2 === 0 ? CY_ODD_TRANSLATE[d] : d
+  }
+  return CY_ALPHABET[sum % 26] === body[8]
+}
+
+/**
+ * CZ: DIČ has three populations by length/lead digit.
+ * - 8 digits: legal entities (IČO check), weights [8..2]; remainder 0/1 map to check
+ *   digits 1/0 (8-digit numbers starting '9' are rejected at the format layer).
+ * - 9 digits starting '6': VAT groups / special individuals, weights [8..2] over d2..d8.
+ * - 9 digits not starting '6': individuals born pre-1954 with no check digit at all —
+ *   CHECKSUM_NOT_VERIFIABLE.
+ * - 10 digits: individuals (birth number/RČ), mod-11-mod-10. The `r === 10 -> check 0`
+ *   historical exception is accepted (stdnum behaviour); jsvat rejects it — spec
+ *   recommends accepting since it matches ~1000 real numbers issued 1954-1985.
+ */
+function checkCZ(body: string): boolean | null {
+  if (body.length === 8) {
+    const r = weightedSum(body, [8, 7, 6, 5, 4, 3, 2]) % 11
+    let check = (11 - r) % 11
+    if (check === 0) check = 1
+    return check % 10 === Number(body[7])
+  }
+  if (body.length === 9) {
+    if (body[0] !== '6') return null
+    const r = weightedSum(body.slice(1), [8, 7, 6, 5, 4, 3, 2]) % 11
+    const check = (8 - ((10 - r) % 11) + 10) % 10
+    return check === Number(body[8])
+  }
+  const r = Number(body.slice(0, 9)) % 11
+  return r % 10 === Number(body[9])
+}
+
+/**
+ * HR: ISO 7064 MOD 11,10 over d1..d10 (OIB) — same iterative engine as DE, reused via
+ * mod1110CheckDigit(). Applies to every OIB, legal and natural persons alike.
+ */
+function checkHR(body: string): boolean {
+  return mod1110CheckDigit(body.slice(0, 10)) === Number(body[10])
+}
+
+const IE_ALPHABET = 'WABCDEFGHIJKLMNOPQRSTUV'
+
+/**
+ * IE: normalises old-style numbers (`D L DDDDD C`) to the 7-digit form (0 + d3..d7 + d1),
+ * then weights [8..2] over the 7 digits; a 2013-format trailing letter (9th char) adds
+ * 9x its alphabet index before mod 23. Per spec, any alphabet letter is accepted as the
+ * trailing char (stdnum's general formula), not just A/H (jsvat hardcodes those two).
+ */
+function checkIE(body: string): boolean {
+  const oldStyle = /^\d[A-Z+*]\d{5}[A-Z]$/.test(body)
+  const digits = oldStyle ? '0' + body.slice(2, 7) + body[0] : body.slice(0, 7)
+  const checkLetter = body[7]
+  const trailing = oldStyle ? undefined : body[8]
+  let sum = weightedSum(digits, [8, 7, 6, 5, 4, 3, 2])
+  if (trailing) sum += 9 * IE_ALPHABET.indexOf(trailing)
+  return IE_ALPHABET[sum % 23] === checkLetter
+}
+
+/**
+ * LT: two-pass re-weighted mod-11 (9- and 12-digit PVM kodas share one engine).
+ * Pass-1 cyclic weights 1..9; if the remainder is 10, retry with weights shifted by 2.
+ * Final check digit collapses remainder 10 -> 0.
+ */
+function checkLT(body: string): boolean {
+  const n = body.length - 1
+  const pass1 = Array.from({ length: n }, (_, i) => 1 + (i % 9))
+  let r = weightedSum(body, pass1) % 11
+  if (r === 10) {
+    const pass2 = Array.from({ length: n }, (_, i) => 1 + ((i + 2) % 9))
+    r = weightedSum(body, pass2) % 11
+  }
+  return r % 10 === Number(body[n])
+}
+
+/**
+ * LV: legal entities (first digit 4-9) use weights [9,1,4,8,3,10,2,5,7,6]; check = (3-r) mod 11.
+ * A remainder of 4 has no valid check digit UNLESS d1 === '9', in which case the VIES-documented
+ * routines recompute S -= 45 before re-deriving r (stdnum omits this; jsvat's port of it is
+ * buggy) — spec recommends the VIES behaviour since it strictly widens acceptance.
+ * Natural persons (first digit 0-3) have no independently-confirmed checksum algorithm, so
+ * they're CHECKSUM_NOT_VERIFIABLE (mirrors the FR alphabetic-key handling).
+ */
+function checkLV(body: string): boolean | null {
+  const first = body[0]
+  if (first >= '0' && first <= '3') return null
+  let sum = weightedSum(body, [9, 1, 4, 8, 3, 10, 2, 5, 7, 6])
+  let r = sum % 11
+  if (r === 4 && first === '9') {
+    sum -= 45
+    r = ((sum % 11) + 11) % 11
+  }
+  if (r === 4) return false
+  const check = (((3 - r) % 11) + 11) % 11
+  return check === Number(body[10])
+}
+
+/**
+ * SK: whole 10-digit number must be divisible by 11 (no discrete check digit); d3 in
+ * {2,3,4,6,7,8,9} is enforced by VAT_PATTERNS (union of stdnum's and jsvat's allow-sets,
+ * since sources disagree on '6'). The spec's optional "valid Slovak RČ" bypass for
+ * non-divisible numbers is intentionally NOT implemented here — it requires a separate
+ * birth-number algorithm outside this table's scope, and the spec itself frames it as
+ * optional ("if you choose to implement that branch at all").
+ */
+function checkSK(body: string): boolean {
+  return Number(body) % 11 === 0
 }
 
 /** Weighted modulo-11 helper: sum(digit[i] * weights[i]). */
@@ -174,12 +316,20 @@ const CHECKSUMS: Record<string, (body: string, normalized: string) => boolean | 
   PL: checkPL,
   SI: checkSI,
   EE: checkEE,
+  AT: checkAT,
+  CY: checkCY,
+  CZ: checkCZ,
+  HR: checkHR,
+  IE: checkIE,
+  LT: checkLT,
+  LV: checkLV,
+  SK: checkSK,
 }
 
 /**
  * Validate an EU VAT number offline: country prefix, structure, and (for the
- * V1 priority set NL/BE/DE/FR/ES/IT) the checksum. All other EU-27 countries
- * are format-only — `checks.checksum` is `null`.
+ * countries listed in VAT_CHECKSUM_SUPPORTED) the checksum. All other EU-27
+ * countries are format-only — `checks.checksum` is `null`.
  *
  * This never asks VIES whether the number is *registered* — use the Cloud
  * client's `verifyVAT()` for that.

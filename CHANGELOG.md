@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- VAT checksum validation for AT, CZ, HR, LT, LV, IE, CY, and SK, bringing
+  the checksum-verified country count from 14 to 22. CZ and LV each retain
+  a `checksum: null` (`CHECKSUM_NOT_VERIFIABLE`) sub-case for populations
+  with no independently-confirmed check digit (CZ 9-digit individuals not
+  starting `6`; LV natural-person personal codes).
+
 ### Changed
 
 - `@alosha/eu-validate/cloud` no longer gates requests behind a compile-time

@@ -16,8 +16,11 @@ export const VAT_PATTERNS: Record<CountryCode, RegExp> = {
   AT: /^U\d{8}$/,
   BE: /^0\d{9}$/,
   BG: /^\d{9,10}$/,
-  CY: /^\d{8}[A-Z]$/,
-  CZ: /^\d{8,10}$/,
+  // Structural rule (both checksum sources agree): TIC may not start '12'.
+  CY: /^(?!12)\d{8}[A-Z]$/,
+  // 8-digit legal entities may not start '9' (IČO allocation rule); 9- and
+  // 10-digit individuals/groups have no such restriction.
+  CZ: /^(?:[0-8]\d{7}|\d{9,10})$/,
   DE: /^\d{9}$/,
   DK: /^\d{8}$/,
   EE: /^\d{9}$/,
@@ -27,9 +30,13 @@ export const VAT_PATTERNS: Record<CountryCode, RegExp> = {
   FR: /^[A-Z0-9]{2}\d{9}$/,
   HR: /^\d{11}$/,
   HU: /^\d{8}$/,
-  IE: /^\d{7}[A-Z]{1,2}$|^\d[A-Z]\d{5}[A-Z]$/,
+  // New/2013 style: 7 digits + 1-2 check letters. Old style: digit, letter/+/*,
+  // 5 digits, check letter.
+  IE: /^\d{7}[A-Z]{1,2}$|^\d[A-Z+*]\d{5}[A-Z]$/,
   IT: /^\d{11}$/,
-  LT: /^(\d{9}|\d{12})$/,
+  // 9-digit: 7 digits + structural '1' (8th digit) + check digit.
+  // 12-digit: 10 digits + structural '1' (11th digit) + check digit.
+  LT: /^(?:\d{7}1\d|\d{10}1\d)$/,
   LU: /^\d{8}$/,
   LV: /^\d{11}$/,
   MT: /^\d{8}$/,
@@ -39,7 +46,9 @@ export const VAT_PATTERNS: Record<CountryCode, RegExp> = {
   RO: /^\d{2,10}$/,
   SE: /^\d{12}$/,
   SI: /^\d{8}$/,
-  SK: /^\d{10}$/,
+  // d1 != 0; d3 in the union of both checksum sources' allow-sets (they
+  // disagree on '6' — see checkSK).
+  SK: /^[1-9]\d[2346789]\d{7}$/,
 }
 
 /**
@@ -49,6 +58,7 @@ export const VAT_PATTERNS: Record<CountryCode, RegExp> = {
 export const VAT_CHECKSUM_SUPPORTED: CountryCode[] = [
   'NL', 'BE', 'DE', 'FR', 'ES', 'IT',
   'LU', 'PT', 'FI', 'DK', 'SE', 'PL', 'SI', 'EE',
+  'AT', 'CY', 'CZ', 'HR', 'IE', 'LT', 'LV', 'SK',
 ]
 
 /**

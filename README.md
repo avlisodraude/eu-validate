@@ -294,7 +294,7 @@ If the hosted endpoint isn't deployed yet (404, or the connection fails at the D
 
 ## Coverage (V1)
 
-- **VAT checksum:** NL · BE · DE · FR · ES · IT · LU · PT · FI · DK · SE · PL · SI · EE (14 countries)
+- **VAT checksum:** NL · BE · DE · FR · ES · IT · LU · PT · FI · DK · SE · PL · SI · EE · AT · CY · CZ · HR · IE · LT · LV · SK (22 countries)
 - **VAT format-only:** the rest of the EU-27 (`checks.checksum` is `null`)
 - **IBAN:** all SEPA / IBAN-registry countries
 - **BSN / KvK:** 🇳🇱 NL
