@@ -66,14 +66,6 @@ describe('validateVAT — checksum countries', () => {
     expect(r.errors).toEqual([])
   })
 
-  it('rejects a bad checksum', () => {
-    const r = validateVAT('DE136695975') // last digit wrong
-    expect(r.valid).toBe(false)
-    expect(r.checks.format).toBe(true)
-    expect(r.checks.checksum).toBe(false)
-    expect(r.errors).toContain('CHECKSUM_FAILED')
-  })
-
   it('accepts lowercase / spaced / dotted input', () => {
     expect(validateVAT('nl 1234.567.82 b01').valid).toBe(true)
   })
@@ -133,10 +125,19 @@ describe('validateVAT — FR alphabetic key (CHECKSUM_NOT_VERIFIABLE)', () => {
   })
 })
 
-describe('validateVAT — AT/CZ/HR/LT/LV/IE/CY/SK invalid mutations', () => {
+describe('validateVAT — invalid checksum mutations (all checksum countries)', () => {
   // Every number below is a checksum-failing mutation of a verified-valid
   // fixture from vat-checksum-spec.md's "Invalid mutations" sections.
   const invalidChecksum: Array<[string, string]> = [
+    ['DE', 'DE136695975'], // last digit 6->5
+    ['LU', 'LU26375345'], // d6 2->3
+    ['PT', 'PT511964843'], // d2 0->1
+    ['FI', 'FI30774740'], // d1 2->3
+    ['DK', 'DK23585628'], // d1 1->2
+    ['SE', 'SE656036079301'], // d1 5->6
+    ['PL', 'PL5360001246'], // d2 2->3
+    ['SI', 'SI59182437'], // d3 0->1
+    ['EE', 'EE200931558'], // d1 1->2
     ['AT', 'ATU33864708'], // last digit 7->8
     ['AT', 'ATU53119529'], // d2 8->3
     ['CZ (8-digit)', 'CZ00177042'],
