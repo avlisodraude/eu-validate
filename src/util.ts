@@ -5,13 +5,15 @@ export function clean(input: string): string {
   return input.replace(/[\s.\-/]/g, '').toUpperCase()
 }
 
-/**
- * True when input is not a usable, non-empty string. Guards every validator's
- * entry point so a plain-JS caller passing `null`/`undefined`/a number gets a
- * clean `EMPTY_INPUT` result instead of a thrown TypeError from `.trim()`.
- */
-export function isBlank(input: unknown): boolean {
-  return typeof input !== 'string' || input.trim() === ''
+/** Maximum raw identifier length, before trimming or normalization. */
+export const MAX_INPUT_LENGTH = 256
+
+/** Reject malformed or excessive input before doing any string processing. */
+export function inputFailure(type: IdentifierType, input: unknown): ValidationResult | null {
+  if (typeof input !== 'string') return fail(type, '', ['INVALID_INPUT'])
+  if (input.length > MAX_INPUT_LENGTH) return fail(type, input, ['INPUT_TOO_LONG'])
+  if (input.trim() === '') return fail(type, input, ['EMPTY_INPUT'])
+  return null
 }
 
 /** Build a failing result in one call. */

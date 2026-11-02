@@ -9,6 +9,10 @@ export type CountryCode = string
  * Kept stable so consumers can branch on them.
  */
 export type ErrorCode =
+  | 'INVALID_INPUT'
+  | 'INPUT_TOO_LONG'
+  | 'INVALID_OPTIONS'
+  | 'FORMAT_NOT_SUPPORTED'
   | 'EMPTY_INPUT'
   | 'INVALID_FORMAT'
   | 'UNKNOWN_COUNTRY'
@@ -27,17 +31,19 @@ export type ErrorCode =
 export interface ValidationResult {
   /** Offline format + checksum validity. */
   valid: boolean
-  /** The original, untrimmed input. */
+  /** Original string input; empty for a non-string supplied by a JavaScript caller. */
   input: string
   /** Cleaned / canonical form, or null if it could not be parsed. */
   normalized: string | null
-  /** Detected country (ISO alpha-2), or null when not derivable. */
+  /** Country code; VAT uses Greece's EL prefix, other identifiers use ISO GR. */
   country: CountryCode | null
   /** Which identifier type was checked. */
   type: IdentifierType
   /** Which layers ran. `checksum: null` = no checksum implemented for this case yet. */
   checks: {
     format: boolean
+    /** Postal only: whether a country format rule exists; separate from its pass/fail result. */
+    formatSupported?: boolean
     checksum: boolean | null
   }
   /**
@@ -45,7 +51,8 @@ export interface ValidationResult {
    * informational `CHECKSUM_NOT_VERIFIABLE` code: a result can be `valid: true`
    * with that single code present when the identifier is structurally well
    * formed but this specific value's checksum couldn't be computed offline
-   * (e.g. a French VAT number with an alphabetic key). Check `checks.checksum`
+   * (e.g. a French VAT number with an alphabetic key). Legacy postal acceptance
+   * also uses this code when formatSupported is false. Check `checks.checksum`
    * (`null`) if you need to branch on "verified" vs. "format-only".
    */
   errors: ErrorCode[]
@@ -54,4 +61,12 @@ export interface ValidationResult {
 export interface PostalCodeOptions {
   /** Required: postal code formats are country-specific. */
   country: CountryCode
+  /** Reject countries without postal format rules. Default false for compatibility. */
+  strict?: boolean
+}
+
+/** A dispatcher call without a recognized identifier type. */
+export interface InvalidOptionsResult extends Omit<ValidationResult, 'type' | 'valid'> {
+  valid: false
+  type: null
 }

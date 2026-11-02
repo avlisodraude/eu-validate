@@ -4,6 +4,8 @@ export { validateBSN } from './bsn.js'
 export { validateKvK } from './kvk.js'
 export { validatePostalCode } from './postal.js'
 export { validate, type ValidateOptions } from './validate.js'
+export { MAX_INPUT_LENGTH } from './util.js'
+export { IBAN_PATTERNS } from './iban-formats.js'
 export { isValid, assertValid, ValidationError } from './helpers.js'
 
 export {
@@ -16,6 +18,7 @@ export {
 
 export type {
   ValidationResult,
+  InvalidOptionsResult,
   IdentifierType,
   CountryCode,
   ErrorCode,

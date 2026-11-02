@@ -11,7 +11,7 @@ Validate EU **VAT**, **IBAN**, and Dutch **BSN/KvK** numbers — offline, zero-d
 **▶ [Try the live demo](https://eu-validate.alosha.dev/demo)** — validate VAT, IBAN, BSN, KvK and postal codes right in your browser. No install, nothing uploaded.
 
 - ✅ **Zero runtime dependencies** — pure, deterministic checks. Nothing is fetched.
-- 🧮 **Real checksums**, not just regex — VAT for all 27 EU countries, IBAN (ISO 13616 mod-97), Dutch BSN (11-proof).
+- 🧮 **Real checksums**, not just regex — VAT for all 27 EU countries, IBAN (national structure + ISO 13616 mod-97), Dutch BSN (11-proof).
 - 🌍 **Format validation for all 27 EU VAT formats** + SEPA IBAN lengths.
 - 🔠 **One consistent result shape** across every identifier type.
 - 🧩 **Tree-shakeable** ESM + CJS, TypeScript types included.
@@ -66,6 +66,37 @@ import { validate } from '@alosha/eu-validate'
 
 validate('1011 AB', { type: 'postalCode', country: 'NL' })
 ```
+
+### Input safety and postal coverage
+
+Offline validators accept at most `MAX_INPUT_LENGTH` (256) UTF-16 code units of
+raw input, before trimming or normalization. Longer strings return `INPUT_TOO_LONG`.
+JavaScript callers passing a non-string get `INVALID_INPUT` with `input: ''`;
+no automatic string coercion is performed. Empty strings still return `EMPTY_INPUT`.
+Malformed dispatcher options return `INVALID_OPTIONS` with `type: null` instead of
+throwing or returning undefined. Typed calls with a valid `ValidateOptions` retain
+the existing `ValidationResult` return type.
+
+Postal results include `checks.formatSupported`. The default preserves historical
+acceptance for EU countries without a format rule; a true `valid` value with
+`formatSupported: false` does **not** confirm the postal format. New applications
+that require a verified format should opt into strict mode:
+
+```ts
+validatePostalCode('D02 AF30', { country: 'IE', strict: true })
+// valid: false, errors: ['FORMAT_NOT_SUPPORTED'], checks.formatSupported: false
+validate('1011 AB', { type: 'postalCode', country: 'NL', strict: true })
+// valid: true, checks.formatSupported: true
+```
+
+`EU_COUNTRIES` uses ISO codes (`GR` for Greece). VAT results and
+`VAT_CHECKSUM_SUPPORTED` keep `EL`; postal validation accepts `EL` as an alias and
+returns `GR`. `ValidationError` messages omit the identifier and its `result`
+property is non-enumerable; deliberate access through `error.result` is preserved.
+Avoid explicitly logging that result if it contains sensitive data.
+
+See the [offline validation migration notes](https://github.com/avlisodraude/eu-validate/blob/main/docs/offline-validation.md)
+for behavior changes and registry provenance.
 
 ### Convenience helpers
 
@@ -297,7 +328,7 @@ If the hosted endpoint isn't deployed yet (404, or the connection fails at the D
 - **VAT checksum:** all 27 EU countries. `checks.checksum` is `null` only for
   per-number sub-cases with no offline-checkable formula (FR alphabetic keys,
   CZ pre-1954 birth numbers, LV natural persons).
-- **IBAN:** all SEPA / IBAN-registry countries
+- **IBAN:** national character rules, length and mod-97 for all 89 countries in SWIFT IBAN Registry release 103 (September 2026)
 - **BSN / KvK:** 🇳🇱 NL
 - **Postal codes:** NL, DE, FR, BE, ES, IT
 
@@ -311,7 +342,7 @@ Greece's ISO 3166-1 country code is `GR`, but its VAT prefix is `EL`. `validateV
 
 ### Note on FR VAT and `CHECKSUM_NOT_VERIFIABLE`
 
-French VAT numbers can have either a numeric key (formula-checkable) or an alphabetic key (not formula-checkable offline). For the alphabetic-key case, `validateVAT()` returns `valid: true` with `checks.checksum: null` and `errors: ['CHECKSUM_NOT_VERIFIABLE']` — the format is confirmed correct, but the checksum itself couldn't be confirmed. This is the one case where `errors` is non-empty on a valid result; check `checks.checksum === null` if you want to distinguish "checksum verified" from "checksum not checkable" programmatically.
+French VAT numbers can have either a numeric key (formula-checkable) or an alphabetic key (not formula-checkable offline). For the alphabetic-key case, `validateVAT()` returns `valid: true` with `checks.checksum: null` and `errors: ['CHECKSUM_NOT_VERIFIABLE']` — the format is confirmed correct, but the checksum itself couldn't be confirmed. Other VAT sub-cases and legacy acceptance of unsupported postal formats can also carry this informational code; check `checks.checksum === null` if you want to distinguish "checksum verified" from "checksum not checkable" programmatically.
 
 ## Develop
 
