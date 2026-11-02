@@ -7,18 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+The package manifest and latest published npm version remain 0.5.0. The changes
+below are implemented in the current checkout and await a new release version.
+
 ### Added
 
 - National IBAN character rules and official example regressions for all 89
   countries in SWIFT IBAN Registry release 103 (September 2026).
 - Postal `strict` mode and `checks.formatSupported` coverage reporting.
 - A 256-code-unit raw input limit and structured invalid-input/options results.
-
-- VAT checksum validation for BG, EL, HU, MT, and RO — **every EU-27 member
-  state now has checksum validation** (27 of 27). No new `checksum: null`
-  sub-cases: all five are hard checksums for every syntactically valid number.
-  Algorithms cross-verified by executing python-stdnum 2.2 and jsvat 2.5.4
-  over every fixture; see `docs/vat-checksum-spec-2.md` for provenance.
 
 ### Changed
 
@@ -31,13 +28,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   releasing these behavior corrections to existing consumers.
 - `ValidationError` omits raw identifiers from its message and exposes `result`
   non-enumerably to reduce accidental logging of sensitive input.
-
 - Refresh development tooling to ESLint 10, Jest 30, tsup 9, commitlint 21,
   lint-staged 17, and Node 22 type definitions. Retain TypeScript 5.9 because
   TypeScript 7 is outside the lint tooling's supported peer range.
 - CI now verifies Node 22, 24, and 26 and rejects high/critical audit findings.
 - Publishing runs lint, build, tests, packed ESM/CJS verification, and the audit gate.
 - Refresh examples to 0.5.0 and clarify that hosted Cloud lookups are coming soon.
+
+## [0.5.0] - 2026-07-09
+
+### Added
+
+- VAT checksum validation for BG, EL, HU, MT, and RO — **every EU-27 member
+  state now has checksum validation** (27 of 27). No new `checksum: null`
+  sub-cases: all five are hard checksums for every syntactically valid number.
+  Algorithms cross-verified by executing python-stdnum 2.2 and jsvat 2.5.4
+  over every fixture; see `docs/vat-checksum-spec-2.md` for provenance.
+
+### Changed
 
 - `VAT_PATTERNS.MT` and `VAT_PATTERNS.RO` now reject a leading zero
   (`MT01234567`, `RO0…` were previously format-valid). Both reference

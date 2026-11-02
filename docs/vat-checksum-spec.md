@@ -1,7 +1,16 @@
 # VAT Checksum Specification — AT, CZ, HR, LT, LV, IE, CY, SK
 
-**Status:** research complete, ready for implementation.
+**Status:** implemented; retained as dated research and fixture provenance.
 **Date:** 2026-07-08.
+**Implementation review:** 2026-11-02. The country handlers are in
+[`src/vat.ts`](../src/vat.ts) and regression fixtures in
+[`test/vat.test.ts`](../test/vat.test.ts). All 27 EU VAT prefixes now have a
+handler; documented per-number checksum exceptions remain. Current input,
+result and release behavior is described in [the API reference](api.md) and
+[offline migration notes](offline-validation.md). This specification preserves
+its original research date and references; its historical recommendations are
+not a current implementation task list.
+
 **Methodology:** algorithms cross-checked between two independent reference implementations —
 [python-stdnum](https://github.com/arthurdejong/python-stdnum) (per-country modules, LGPL, actively maintained)
 and [jsvat](https://github.com/se-panfilov/jsvat) (TypeScript port of Braemoor's JS routines, which derive from the
@@ -16,6 +25,12 @@ mirrors (cited per country).
 - `checksum: null` = the existing `CHECKSUM_NOT_VERIFIABLE` semantics (as already used for FR alphabetic keys):
   format is checkable, checksum is not — do **not** hard-fail.
 - ⚠️ marks a genuine disagreement between sources. None are papered over; each has a recommendation.
+
+> **Implementation decision:** the optional Slovak birth-number bypass discussed
+> below was not implemented. `checkSK` requires divisibility by 11; it does not
+> return `checksum: null`. References below to a possible SK bypass describe the
+> research option, not current behavior. Current checksum-null sub-cases are FR
+> alphabetic keys, CZ pre-1954 numbers and LV natural persons.
 
 ## Summary of checksum applicability
 

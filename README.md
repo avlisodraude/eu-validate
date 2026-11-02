@@ -12,10 +12,23 @@ Validate EU **VAT**, **IBAN**, and Dutch **BSN/KvK** numbers — offline, zero-d
 
 - ✅ **Zero runtime dependencies** — pure, deterministic checks. Nothing is fetched.
 - 🧮 **Real checksums**, not just regex — VAT for all 27 EU countries, IBAN (national structure + ISO 13616 mod-97), Dutch BSN (11-proof).
-- 🌍 **Format validation for all 27 EU VAT formats** + SEPA IBAN lengths.
+- 🌍 **Country format rules:** all 27 EU VAT prefixes and 89 national IBAN layouts.
 - 🔠 **One consistent result shape** across every identifier type.
 - 🧩 **Tree-shakeable** ESM + CJS, TypeScript types included.
-- ☁️ **Cloud client (coming soon)** for VIES registration checks and KvK company lookups — the hosted API is not yet available.
+- ☁️ **Optional Cloud client included** for future VIES registration and KvK lookups — the hosted service is planned.
+
+## Release status
+
+The latest npm release is **0.5.0** (2026-07-09). This checkout also contains
+**unreleased** input-safety, postal-coverage, error-privacy and IBAN improvements
+from [PR #2](https://github.com/avlisodraude/eu-validate/pull/2), built on
+[maintenance PR #1](https://github.com/avlisodraude/eu-validate/pull/1).
+The package version has not been bumped. Installing from npm does not yet include
+these newer behaviors. The feature descriptions below describe this checkout;
+see the [changelog](https://github.com/avlisodraude/eu-validate/blob/main/CHANGELOG.md)
+and [documentation index](https://github.com/avlisodraude/eu-validate/blob/main/docs/README.md)
+for the release history and implementation status. The hosted Cloud service is planned;
+the deployed demo may trail this checkout.
 
 ## Install
 
@@ -39,23 +52,31 @@ validateBSN('111222333')
 // { valid: true, ... }
 ```
 
-Input is cleaned automatically (spaces, dots, dashes, casing), so `nl 1234.567.82 b01` works too.
+VAT, IBAN, BSN and KvK inputs are cleaned automatically (spaces, dots, dashes, slashes and casing); postal inputs are trimmed and uppercased. For example, `nl 1234.567.82 b01` works too.
 
 ### The result shape
 
-Every validator returns the same object:
+Offline validators share this result shape. Postal results add an optional format-coverage field:
 
 ```ts
 interface ValidationResult {
   valid: boolean              // offline format + checksum validity
-  input: string               // your original input
+  input: string               // original string, or empty for a non-string input
   normalized: string | null   // canonical form
-  country: string | null      // ISO alpha-2
+  country: string | null      // ISO alpha-2; VAT uses EL for Greece
   type: 'vat' | 'iban' | 'bsn' | 'kvk' | 'postalCode'
-  checks: { format: boolean; checksum: boolean | null }  // null = no checksum for this case
+  checks: {
+    format: boolean
+    formatSupported?: boolean // postal only: whether a country rule is available
+    checksum: boolean | null  // null = not checked / not available for this case
+  }
   errors: string[]            // 'INVALID_FORMAT' | 'CHECKSUM_FAILED' | ...
 }
 ```
+
+Import the full `ValidationResult`, `InvalidOptionsResult` and `ErrorCode` types
+from the package when building integrations. `valid` confirms only the checks
+that could run; it does not establish registration, existence or ownership.
 
 ### Dispatcher
 
@@ -67,12 +88,17 @@ import { validate } from '@alosha/eu-validate'
 validate('1011 AB', { type: 'postalCode', country: 'NL' })
 ```
 
+Missing or unknown dispatcher types return `valid: false`, `type: null` and
+`errors: ['INVALID_OPTIONS']`. This is the separate `InvalidOptionsResult` shape.
+For options coming from an untyped source, handle `type === null` before using
+helpers that require `ValidationResult`.
+
 ### Input safety and postal coverage
 
 Offline validators accept at most `MAX_INPUT_LENGTH` (256) UTF-16 code units of
 raw input, before trimming or normalization. Longer strings return `INPUT_TOO_LONG`.
 JavaScript callers passing a non-string get `INVALID_INPUT` with `input: ''`;
-no automatic string coercion is performed. Empty strings still return `EMPTY_INPUT`.
+no automatic string coercion is performed. Empty and whitespace-only strings within the limit still return `EMPTY_INPUT`.
 Malformed dispatcher options return `INVALID_OPTIONS` with `type: null` instead of
 throwing or returning undefined. Typed calls with a valid `ValidateOptions` retain
 the existing `ValidationResult` return type.
@@ -83,6 +109,8 @@ acceptance for EU countries without a format rule; a true `valid` value with
 that require a verified format should opt into strict mode:
 
 ```ts
+import { validatePostalCode, validate } from '@alosha/eu-validate'
+
 validatePostalCode('D02 AF30', { country: 'IE', strict: true })
 // valid: false, errors: ['FORMAT_NOT_SUPPORTED'], checks.formatSupported: false
 validate('1011 AB', { type: 'postalCode', country: 'NL', strict: true })
@@ -95,7 +123,8 @@ returns `GR`. `ValidationError` messages omit the identifier and its `result`
 property is non-enumerable; deliberate access through `error.result` is preserved.
 Avoid explicitly logging that result if it contains sensitive data.
 
-See the [offline validation migration notes](https://github.com/avlisodraude/eu-validate/blob/main/docs/offline-validation.md)
+See the [API reference](https://github.com/avlisodraude/eu-validate/blob/main/docs/api.md)
+for all error codes and the [offline validation migration notes](https://github.com/avlisodraude/eu-validate/blob/main/docs/offline-validation.md)
 for behavior changes and registry provenance.
 
 ### Convenience helpers
@@ -105,7 +134,8 @@ For call sites that want to branch or throw instead of checking `.valid` by hand
 ```ts
 import { validateIBAN, isValid, assertValid, ValidationError } from '@alosha/eu-validate'
 
-const r = validateIBAN('NL91ABNA0417164300')
+const input = 'NL91ABNA0417164300'
+const r = validateIBAN(input)
 
 if (isValid(r)) {
   // r narrowed to valid: true
@@ -115,7 +145,7 @@ try {
   const checked = assertValid(validateIBAN(input)) // throws ValidationError if invalid
 } catch (e) {
   if (e instanceof ValidationError) {
-    console.log(e.result.errors) // the failing ValidationResult
+    console.log(e.result.errors) // codes only; result.input contains the identifier
   }
 }
 ```
@@ -147,11 +177,11 @@ export async function resolveVat(input: string) {
 }
 ```
 
-**Why it works:** the offline checksum filters out typos and fabricated numbers for free, so the slow, rate-limited VIES call only ever runs on structurally valid input. You cut checkout latency and stop burning your VIES quota on garbage.
+**Why it works:** offline checks reject malformed values and checksum failures before a future live lookup, so the slow, rate-limited VIES call only ever runs on structurally valid input. You cut checkout latency and stop burning your VIES quota on garbage.
 
 ### Validate Dutch BSN and IBAN without sending PII anywhere
 
-**The problem:** an onboarding form collects a BSN and IBAN, but shipping those to a third-party validation API is a GDPR data-egress problem.
+**The problem:** an onboarding form needs to check a BSN and IBAN without sending those identifiers to a third-party validator.
 
 ```ts
 import { validateBSN, validateIBAN } from '@alosha/eu-validate'
@@ -171,7 +201,7 @@ export function validateOnboarding(form: { bsn: string; iban: string }) {
 }
 ```
 
-**Why it works:** every validator is a pure function with no network call, so sensitive identifiers like a BSN never reach an external processor. You get instant inline form feedback and one fewer data-processing agreement to sign.
+**Why it works:** every validator is a pure function with no network call, so sensitive identifiers like a BSN never reach an external processor. The application still controls how those values are stored or logged.
 
 ### Confirm VAT registration when you can, fall back gracefully when you can't
 
@@ -191,7 +221,7 @@ export async function checkVat(input: string) {
 
   try {
     const live = await eu.verifyVAT(offline.normalized!)
-    return { status: (live.registered ? 'registered' : 'not_registered') as const, company: live.name }
+    return { status: live.registered ? 'registered' as const : 'not_registered' as const, company: live.name }
   } catch (err) {
     if (err instanceof CloudNotAvailableError) {
       // Hosted lookups aren't live yet — the offline checksum already passed, so degrade
@@ -210,6 +240,9 @@ export async function checkVat(input: string) {
 **Why it works:** `verifyVAT()` throws typed errors instead of a generic `Error`, so a Cloud outage or a not-yet-deployed hosted endpoint never gets confused with "the VAT number is wrong." The offline checksum already did the hard rejection work, so every Cloud failure mode here degrades to "unconfirmed" instead of blocking the user.
 
 ### Reject malformed identifiers at the edge of your API
+
+This integration example assumes Express is installed in your application; it is
+not a dependency of this package.
 
 **The problem:** every route that accepts a VAT, IBAN or BSN re-implements the same `if (!result.valid) return res.status(400)...` boilerplate, and it's easy for one route to forget a field.
 
@@ -269,6 +302,11 @@ export function validateOnboardingForm(form: Record<string, string>) {
 
 ### Clean up a customer VAT list before a VIES batch run
 
+This small example assumes unquoted comma-separated fields. Use a CSV parser
+when handling quoted fields, embedded commas or line breaks, and protect files
+containing customer identifiers. The standalone example in `examples/` uses
+inline demonstration rows and writes no files.
+
 **The problem:** a finance team exports thousands of customer VAT numbers for a quarterly VIES re-verification, and running every row through VIES — typos, copy-paste artifacts and all — wastes the rate-limited quota on input that was never going to pass.
 
 ```ts
@@ -298,17 +336,17 @@ writeFileSync('rejected.csv', rejected.join('\n'))
 console.log(`${clean.length - 1} clean, ${rejected.length - 1} rejected — only clean.csv needs a VIES call.`)
 ```
 
-**Why it works:** the checksum pass is synchronous and free, so a list of 10,000 numbers is sorted into "worth a VIES call" and "already known bad" in milliseconds, with the specific error code attached to every rejected row for the finance team to act on. You spend VIES quota only on numbers that have a chance of being real.
+**Why it works:** the offline pass separates checksum or format failures from values eligible for a future registration lookup. Passing an offline check does not establish that a company or identifier exists.
 
 ## What "valid" means
 
-This library answers **"is this well-formed?"** — it never makes a network request, so it cannot tell you whether a number is *registered* or belongs to a real company. The separate `/cloud` client makes network requests for those lookups; the hosted service is coming soon.
+The main entry reports offline format/checksum results for its implemented rules. Postal coverage must also be considered as described above. It never makes a network request and cannot establish whether a number is *registered* or belongs to a real company. The separate `/cloud` client makes network requests for those lookups; the hosted service is coming soon.
 
 | | Offline (this library) | Cloud (`/cloud`, coming soon) |
 |---|---|---|
 | VAT | format + checksum | VIES lookup — registered & active, with name/address |
 | KvK | format (8 digits) | KvK register — company name, status, address |
-| IBAN | mod-97 + length | — (offline is enough) |
+| IBAN | national layout + length + mod-97 | — (no existence/ownership check) |
 | BSN | 11-proof | — (no public lookup) |
 
 ```ts
@@ -321,16 +359,16 @@ await eu.lookupKvK('69599084')       // → KvK company data
 
 > The hosted Cloud API is coming soon. The client already attempts HTTP requests, but the examples above do not establish service availability. Handle `CloudNotAvailableError` as shown in the fallback recipe.
 
-If the hosted endpoint isn't deployed yet (404, or the connection fails at the DNS/socket level), `verifyVAT()` / `lookupKvK()` throw a typed `CloudNotAvailableError` (rather than a generic `Error`) so you can catch it specifically. Once live, the client throws `CloudTimeoutError` (request exceeded `timeoutMs`) or `CloudApiError` (non-2xx response, with `status`/`statusText`/`body`) — all three are exported from `@alosha/eu-validate/cloud`.
+If the hosted endpoint isn't deployed yet (404, or the connection fails at the DNS/socket level), `verifyVAT()` / `lookupKvK()` throw a typed `CloudNotAvailableError` (rather than a generic `Error`) so you can catch it specifically. The client already throws `CloudTimeoutError` when a request exceeds `timeoutMs` and `CloudApiError` for other non-2xx responses (with `status`/`statusText`/`body`) — all three are exported from `@alosha/eu-validate/cloud`.
 
-## Coverage (V1)
+## Offline coverage in this checkout
 
 - **VAT checksum:** all 27 EU countries. `checks.checksum` is `null` only for
   per-number sub-cases with no offline-checkable formula (FR alphabetic keys,
   CZ pre-1954 birth numbers, LV natural persons).
 - **IBAN:** national character rules, length and mod-97 for all 89 countries in SWIFT IBAN Registry release 103 (September 2026)
 - **BSN / KvK:** 🇳🇱 NL
-- **Postal codes:** NL, DE, FR, BE, ES, IT
+- **Postal format rules:** NL, DE, FR, BE, ES, IT. Other EU countries are unverified in default mode and return `FORMAT_NOT_SUPPORTED` in strict mode.
 
 ### Note on NL VAT
 
@@ -338,11 +376,11 @@ The NL checksum validates both number styles offline. Company (legal-entity) num
 
 ### Note on Greece: GR vs EL
 
-Greece's ISO 3166-1 country code is `GR`, but its VAT prefix is `EL`. `validateVAT()` accepts a `GR...` input and normalizes it to `EL...` — so a Greek VAT result's `country` field is `'EL'`. `validateIBAN()` (and `validatePostalCode()`) instead use the ISO code, so a Greek IBAN/postal result's `country` field is `'GR'`. This isn't a bug — VIES itself uses `EL` — but if you're cross-referencing a VAT result against an IBAN result for the same Greek business, compare on `'EL' === 'GR' ? ...` logic rather than assuming the `country` fields match.
+Greece's ISO 3166-1 country code is `GR`, but its VAT prefix is `EL`. `validateVAT()` accepts a `GR...` input and normalizes it to `EL...` — so a Greek VAT result's `country` field is `'EL'`. `validateIBAN()` (and `validatePostalCode()`) instead use the ISO code, so a Greek IBAN/postal result's `country` field is `'GR'`. This isn't a bug — VIES itself uses `EL` — but if you're cross-referencing a VAT result against an IBAN result for the same Greek business, map VAT `EL` to ISO `GR` before comparing country fields. `EU_COUNTRIES` uses `GR`; `VAT_CHECKSUM_SUPPORTED` uses `EL`.
 
 ### Note on FR VAT and `CHECKSUM_NOT_VERIFIABLE`
 
-French VAT numbers can have either a numeric key (formula-checkable) or an alphabetic key (not formula-checkable offline). For the alphabetic-key case, `validateVAT()` returns `valid: true` with `checks.checksum: null` and `errors: ['CHECKSUM_NOT_VERIFIABLE']` — the format is confirmed correct, but the checksum itself couldn't be confirmed. Other VAT sub-cases and legacy acceptance of unsupported postal formats can also carry this informational code; check `checks.checksum === null` if you want to distinguish "checksum verified" from "checksum not checkable" programmatically.
+French VAT numbers can have either a numeric key (formula-checkable) or an alphabetic key (not formula-checkable offline). For the alphabetic-key case, `validateVAT()` returns `valid: true` with `checks.checksum: null` and `errors: ['CHECKSUM_NOT_VERIFIABLE']` — the format is confirmed correct, but the checksum itself couldn't be confirmed. Other VAT sub-cases and legacy acceptance of unsupported postal formats can also carry this informational code; use `checks.checksum === true` to require a confirmed checksum, and inspect `checks.formatSupported` for postal coverage.
 
 ## Develop
 
@@ -352,7 +390,7 @@ The library build retains its Node 18 syntax target for compatibility; developme
 
 ```bash
 npm ci
-npm run verify  # lint, build, tests, packed ESM/CJS checks, high/critical audit gate
+npm run verify  # lint, build, 400 tests, packed runtime/types checks, audit gate
 npm run build   # tsup → ESM + CJS + d.ts
 npm test        # jest
 npm run lint
@@ -360,10 +398,13 @@ npm run lint
 
 `npm run release` publishes manually and runs the complete verification gate through
 `prepublishOnly` before uploading. Ordinary `npm publish` uses the same gate.
+Before publishing, choose the next version, review the behavior changes in the
+migration notes, and move the matching changelog entries out of Unreleased.
+No new version is published by running build, tests or verification.
 
 Remaining development audit findings and the TypeScript migration blockers are tracked in
-[maintenance follow-ups](docs/maintenance-follow-ups.md). The proposed backend work is described
-in the [Cloud service plan](docs/cloud-service-plan.md).
+[maintenance follow-ups](https://github.com/avlisodraude/eu-validate/blob/main/docs/maintenance-follow-ups.md). The proposed backend work is described
+in the [Cloud service plan](https://github.com/avlisodraude/eu-validate/blob/main/docs/cloud-service-plan.md).
 
 ## Support & custom work
 

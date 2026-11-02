@@ -2,16 +2,20 @@
 
 Reviewed 2026-11-02. These changes are independent of the planned Cloud service.
 No validator introduced here performs a network request or adds a runtime dependency.
+The manifest and published version remain 0.5.0; these improvements are unreleased.
+See [the documentation index](README.md) for delivery status and the
+[API reference](api.md) for complete exports and error meanings.
 
 ## Input contract
 
 - The maximum raw identifier input is 256 UTF-16 code units, exported as
   `MAX_INPUT_LENGTH`. Check length before trimming, case folding or pattern work.
-  Oversized strings return `INPUT_TOO_LONG` and retain the original input by
-  reference in the result; `normalized` is null.
+  Oversized strings return `INPUT_TOO_LONG` and retain the original string
+  in the result; `normalized` is null.
 - Non-string JavaScript values return `INVALID_INPUT`, with `input: ''` and
   `normalized: null`. Objects are never coerced with `toString`.
-- Blank strings return the existing `EMPTY_INPUT` result.
+- Blank strings within the raw length limit return the existing `EMPTY_INPUT` result.
+  Longer whitespace-only strings return `INPUT_TOO_LONG`, because length is checked first.
 - `validate` with missing or unrecognized type options returns an
   `InvalidOptionsResult`: `valid: false`, `type: null`, `INVALID_OPTIONS`.
   Valid typed dispatcher calls retain their `ValidationResult` return type.
@@ -23,7 +27,8 @@ No validator introduced here performs a network request or adds a runtime depend
 
 ## Postal compatibility and migration
 
-`checks.formatSupported` reports whether a country format rule exists. A failed
+`checks.formatSupported` reports coverage when the call reaches country-format
+checks. Early input/option failures do not establish a country's coverage. A failed
 supported pattern has `formatSupported: true` and `format: false`.
 
 The default for EU countries without postal patterns preserves the previous
@@ -75,6 +80,14 @@ against the current official release, add or update official examples, and
 record the new release/date. Do not generate valid fixtures from the same
 patterns being tested. Run `npm run verify` after the data update; its packed
 consumer checks cover ESM, CJS and their TypeScript declarations.
+
+## Validation evidence
+
+Implementation commit `0023cac` passed local verification and
+[GitHub Linux CI](https://github.com/avlisodraude/eu-validate/actions/runs/41487015230)
+on Node 22, 24 and 26. All 400 tests in seven suites pass. Package checks install
+the actual tarball, exercise ESM/CJS exports and compile strict TypeScript consumers
+against both sets of declarations. This evidence uses no live backend.
 
 ## Release notes
 
