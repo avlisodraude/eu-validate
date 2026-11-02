@@ -2,6 +2,38 @@
 
 Proposal dated 2026-11-02. No backend is deployed or provider account provisioned
 by this change. The owner confirmed that there is no backend to extend.
+This is a roadmap; it is not yet a complete executable build handoff. See
+[the documentation index](README.md) for the implemented offline work.
+
+## Independence from offline releases
+
+The main package entry never imports the Cloud client. Offline validators can
+be changed, tested, built and released while the hosted service is absent.
+`/cloud` is an optional entry; only callers using its methods need an HTTP service.
+Cloud tests use mocked responses, including in the installed-package checks.
+
+A future backend should have its own package, dependency tree and deployment
+configuration. Preserve the documented HTTP contract or introduce a new API
+version when changing it. `baseUrl` supports a staging/self-hosted URL; the existing
+client default can be routed to a separately deployed service at launch.
+The offline input guards do not validate Cloud request bodies: the server must
+validate authentication, identifier types, lengths and formats independently.
+
+## Details to settle before implementation
+
+- Write versioned request, success and error schemas and map each provider response
+  to the current client fields. Decide which KvK name, status and address to return.
+- Choose the hosting account/project, EU compute/store region, shared storage
+  provider and current cost limits; define local setup commands and required
+  environment variables without committing credentials.
+- Specify key provisioning, hashing/storage, revocation and rotation. Decide the
+  exact per-key quota, concurrency, cache and retention policies.
+- Add deployment, domain routing, monitoring, rollback and provider-outage runbooks.
+- Establish provider access: KvK production subscription/key access is unconfirmed.
+  Keep staging fixture tests distinct from real provider acceptance.
+
+The steps below provide the implementation order and acceptance criteria once
+these decisions are recorded. They do not block offline package maintenance.
 
 ## Recommended approach
 
@@ -21,8 +53,7 @@ the docs website. Select the actual hosting account and store during setup.
 
 For a commercial service, budget for an appropriate paid hosting plan; Vercel's
 [Hobby plan](https://vercel.com/docs/plans/hobby) is for personal, non-commercial
-use. Compare current hosting/store pricing before provisioning. No subscription
-or spend is authorized by this proposal.
+use. Compare current hosting/store pricing before provisioning. This document provisions no hosting or provider subscription.
 
 ## Preserve the existing client contract
 

@@ -1,42 +1,47 @@
 import { EU_COUNTRIES, POSTAL_PATTERNS } from './countries.js'
 import type { PostalCodeOptions, ValidationResult } from './types.js'
-import { fail, isBlank, ok } from './util.js'
+import { fail, inputFailure, ok } from './util.js'
 
-/**
- * Validate a postal code against a country-specific pattern.
- * The country is required because formats overlap across countries.
- */
+/** Validate postal formats; strict mode rejects countries without format coverage. */
 export function validatePostalCode(input: string, options: PostalCodeOptions): ValidationResult {
-  if (isBlank(input)) return fail('postalCode', input, ['EMPTY_INPUT'])
-  if (!options || !options.country) {
-    return fail('postalCode', input, ['COUNTRY_REQUIRED'], { normalized: input.trim() })
+  const finish = (result: ValidationResult, supported = false): ValidationResult => ({
+    ...result,
+    checks: { ...result.checks, formatSupported: supported },
+  })
+  const failure = inputFailure('postalCode', input)
+  if (failure) return finish(failure)
+  if (options != null && (typeof options !== 'object' || Array.isArray(options))) {
+    return finish(fail('postalCode', input, ['INVALID_OPTIONS']))
   }
-
-  const country = options.country.toUpperCase()
+  if (!options || options.country === undefined || options.country === '') {
+    return finish(fail('postalCode', input, ['COUNTRY_REQUIRED']))
+  }
+  if (typeof options.country !== 'string' || options.country.length > 16 ||
+      (options.strict !== undefined && typeof options.strict !== 'boolean')) {
+    return finish(fail('postalCode', input, ['INVALID_OPTIONS']))
+  }
+  const code = options.country.trim().toUpperCase()
+  if (!code) return finish(fail('postalCode', input, ['COUNTRY_REQUIRED']))
+  if (!/^[A-Z]{2}$/.test(code)) return finish(fail('postalCode', input, ['INVALID_OPTIONS']))
+  // Accept the historical VAT-style alias, but return the ISO country code.
+  const country = code === 'EL' ? 'GR' : code
   const value = input.trim().toUpperCase()
   const pattern = POSTAL_PATTERNS[country]
-
+  if (!EU_COUNTRIES.includes(country)) {
+    return finish(fail('postalCode', input, ['UNSUPPORTED_COUNTRY'], { normalized: value, country }))
+  }
   if (!pattern) {
-    if (!EU_COUNTRIES.includes(country)) {
-      return fail('postalCode', input, ['UNSUPPORTED_COUNTRY'], { normalized: value, country })
+    if (options.strict) {
+      return finish(fail('postalCode', input, ['FORMAT_NOT_SUPPORTED'], { normalized: value, country }))
     }
-    // A real EU country, but we don't have a pattern for it yet. Don't
-    // hard-fail on missing coverage — mirror checkFR's "checkable format,
-    // unverifiable checksum" handling: valid, informational-only error code.
-    return {
-      valid: true,
-      input,
-      normalized: value,
-      country,
-      type: 'postalCode',
-      checks: { format: true, checksum: null },
+    // Preserve legacy acceptance while explicitly reporting that no format was checked.
+    return finish({
+      ...ok('postalCode', input, value, country, null),
       errors: ['CHECKSUM_NOT_VERIFIABLE'],
-    }
+    })
   }
-
   if (!pattern.test(value)) {
-    return fail('postalCode', input, ['INVALID_FORMAT'], { normalized: value, country })
+    return finish(fail('postalCode', input, ['INVALID_FORMAT'], { normalized: value, country }), true)
   }
-
-  return ok('postalCode', input, value, country, null)
+  return finish(ok('postalCode', input, value, country, null), true)
 }

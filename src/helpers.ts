@@ -17,15 +17,16 @@ export function isValid(result: ValidationResult): result is ValidationResult & 
 /** Thrown by {@link assertValid} when a `ValidationResult` is invalid. */
 export class ValidationError extends Error {
   /** The failing result, for inspecting `errors`/`checks`/`normalized`. */
-  readonly result: ValidationResult
+  readonly result!: ValidationResult
 
   constructor(result: ValidationResult) {
     super(
-      `eu-validate: invalid ${result.type} "${result.input}"` +
+      `eu-validate: invalid ${result.type}` +
         (result.errors.length ? ` (${result.errors.join(', ')})` : '')
     )
     this.name = 'ValidationError'
-    this.result = result
+    // Preserve deliberate access without exposing identifiers through error logging.
+    Object.defineProperty(this, 'result', { value: result, enumerable: false })
   }
 }
 

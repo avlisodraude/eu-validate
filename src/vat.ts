@@ -1,6 +1,6 @@
 import { VAT_CHECKSUM_SUPPORTED, VAT_PATTERNS } from './countries.js'
 import type { ValidationResult } from './types.js'
-import { clean, fail, isBlank, lettersToDigits, mod97, ok } from './util.js'
+import { clean, fail, inputFailure, lettersToDigits, mod97, ok } from './util.js'
 
 const DNI_LETTERS = 'TRWAGMYFPDXBNJZSQVHLCKE'
 
@@ -432,7 +432,8 @@ const CHECKSUMS: Record<string, (body: string, normalized: string) => boolean | 
  * client's `verifyVAT()` for that.
  */
 export function validateVAT(input: string): ValidationResult {
-  if (isBlank(input)) return fail('vat', input, ['EMPTY_INPUT'])
+  const failure = inputFailure('vat', input)
+  if (failure) return failure
 
   const value = clean(input)
   const match = value.match(/^([A-Z]{2})(.+)$/)

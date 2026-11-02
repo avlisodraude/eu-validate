@@ -1,6 +1,18 @@
 # Maintenance follow-ups
 
 Reviewed 2026-11-02. Recheck these facts before making dependency changes.
+See the [documentation index](README.md) for release and implementation status.
+
+## Completed work
+
+The maintenance foundation and all six recommended offline improvements are
+implemented. They cover input guards, ISO/VAT country separation, postal coverage
+and opt-in strict mode, error privacy, national IBAN layouts and regression tests.
+The implementation has 400 tests in seven suites; installed-package checks also
+compile ESM and CJS TypeScript consumers. No further offline implementation item
+from that review is pending. Review [the migration notes](offline-validation.md)
+before releasing the behavior changes.
+
 
 ## Audit findings still open
 
@@ -56,9 +68,17 @@ generation and packed ESM/CJS checks on Node 22/24/26. Do not install with
 
 ## Delivery and Cloud
 
-- Local checks pass on Node 22, 24 and 26; GitHub/Linux CI must pass on the PR
-  before merging. The PR/run record is the source of truth for hosted checks.
-- Publishing the npm package remains a separate, manual action.
+- [PR #1](https://github.com/avlisodraude/eu-validate/pull/1) supplies the maintenance
+  foundation; [PR #2](https://github.com/avlisodraude/eu-validate/pull/2) adds offline
+  improvements and builds on it. Merge in that order after reviewing current checks.
+- The 400-test implementation at `0023cac` passed [GitHub Linux CI](https://github.com/avlisodraude/eu-validate/actions/runs/41487015230)
+  on Node 22, 24 and 26, including package runtime/type checks and the audit gate.
+  Recheck the latest commit's run before merging any later changes.
+- The package manifest and published version remain 0.5.0. Choose the next version,
+  update the lockfile/version references, finalize [the changelog](../CHANGELOG.md)
+  and run `npm run verify` before the separate manual publication step.
+- `npm run release` and ordinary `npm publish` run the pre-publish gate. None of
+  the verification commands publishes the package by itself.
 - The owner confirmed there is no existing backend. KvK production access has
   not been confirmed.
   Follow [the Cloud service plan](cloud-service-plan.md) for the next product step.

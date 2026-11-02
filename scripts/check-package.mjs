@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // Exercise the actual tarball as a consumer, including package export resolution.
 const directory = mkdtempSync(join(tmpdir(), 'eu-validate-package-'))
@@ -33,6 +34,9 @@ try {
     assert.equal(api.validateVAT('NL123456781B01').valid, false);
     assert.equal(api.validateIBAN('NL91ABNA0417164300').valid, true);
     assert.equal(typeof api.assertValid, 'function');
+    assert.equal(api.validate('x', {type: 'unexpected'}).type, null);
+    assert.equal(api.validatePostalCode('10558', {country: 'GR'}).country, 'GR');
+    assert.equal(api.validatePostalCode('???', {country: 'IE', strict: true}).valid, false);
     assert.equal(typeof cloud.createClient, 'function');
     globalThis.fetch = async (url, options) => {
       assert.ok(url.endsWith('/vat/verify'));
@@ -55,6 +59,23 @@ try {
       cwd: directory, stdio: 'pipe',
     })
   }
+  // Compile both consumer module formats against the declarations in the tarball.
+  const consumer = `
+    import {validate, validatePostalCode, type ValidationResult} from '@alosha/eu-validate';
+    import {createClient} from '@alosha/eu-validate/cloud';
+    const result: ValidationResult = validate('NL91ABNA0417164300', {type: 'iban'});
+    const formatSupported: boolean | undefined = validatePostalCode('10558', {country: 'GR'}).checks.formatSupported;
+    const unknown = validate('x', {type: 'unexpected'});
+    if (unknown.type === null) { const invalid: false = unknown.valid; void invalid; }
+    createClient({apiKey: 'compile-only'});
+    void result; void formatSupported;
+  `
+  for (const extension of ['mts', 'cts']) {
+    writeFileSync(join(directory, `consumer.${extension}`), consumer)
+  }
+  execFileSync(process.execPath, [fileURLToPath(new URL('../node_modules/typescript/bin/tsc', import.meta.url)),
+    '--noEmit', '--strict', '--module', 'nodenext', '--moduleResolution', 'nodenext',
+    '--target', 'es2022', 'consumer.mts', 'consumer.cts'], { cwd: directory, encoding: 'utf8' })
   console.log('Packed ESM/CJS exports, declarations, validators, and Cloud client passed.')
 } finally {
   rmSync(directory, { recursive: true, force: true })

@@ -2,7 +2,7 @@ import type { CountryCode } from './types.js'
 
 /** The 27 EU member-state country codes. */
 export const EU_COUNTRIES: CountryCode[] = [
-  'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'EL', 'ES', 'FI', 'FR',
+  'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GR',
   'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO',
   'SE', 'SI', 'SK',
 ]
@@ -66,20 +66,8 @@ export const VAT_CHECKSUM_SUPPORTED: CountryCode[] = [
   'BG', 'EL', 'HU', 'MT', 'RO',
 ]
 
-/**
- * IBAN total length per country (prefix + check digits + BBAN).
- * Covers SEPA / IBAN-registry countries.
- */
-export const IBAN_LENGTHS: Record<CountryCode, number> = {
-  AD: 24, AE: 23, AL: 28, AT: 20, AZ: 28, BA: 20, BE: 16, BG: 22, BH: 22,
-  BR: 29, BY: 28, CH: 21, CR: 22, CY: 28, CZ: 24, DE: 22, DK: 18, DO: 28,
-  EE: 20, EG: 29, ES: 24, FI: 18, FO: 18, FR: 27, GB: 22, GE: 22, GI: 23,
-  GL: 18, GR: 27, GT: 28, HR: 21, HU: 28, IE: 22, IL: 23, IS: 26, IT: 27,
-  JO: 30, KW: 30, KZ: 20, LB: 28, LC: 32, LI: 21, LT: 20, LU: 20, LV: 21,
-  MC: 27, MD: 24, ME: 22, MK: 19, MR: 27, MT: 31, MU: 30, NL: 18, NO: 15,
-  PK: 24, PL: 28, PS: 29, PT: 25, QA: 29, RO: 24, RS: 22, SA: 24, SE: 24,
-  SI: 19, SK: 24, SM: 27, TN: 24, TR: 26, UA: 29, VG: 24, XK: 20,
-}
+// Kept as a re-export for callers importing the existing country data module.
+export { IBAN_LENGTHS } from './iban-formats.js'
 
 /**
  * Postal-code formats (V1 core set). Only six countries have a pattern so far —

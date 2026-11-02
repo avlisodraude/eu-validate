@@ -1,9 +1,18 @@
 # VAT Checksum Specification 2 — BG, EL, HU, MT, RO
 
-**Status:** research complete, ready for implementation. Completes the EU-27: after this batch every
+**Status:** implemented; retained as dated research and fixture provenance. This implemented batch completed EU-27 coverage: every
 member state has checksum validation (subject to the per-country `checksum: null` sub-cases already
 documented in [spec 1](./vat-checksum-spec.md) for CZ/LV/FR — this batch adds **no** new ones).
 **Date:** 2026-07-09.
+**Implementation review:** 2026-11-02. The country handlers are in
+[`src/vat.ts`](../src/vat.ts) and regression fixtures in
+[`test/vat.test.ts`](../test/vat.test.ts). All 27 EU VAT prefixes now have a
+handler; documented per-number checksum exceptions remain. Current input,
+result and release behavior is described in [the API reference](api.md) and
+[offline migration notes](offline-validation.md). This specification preserves
+its original research date and references; its historical recommendations are
+not a current implementation task list.
+
 **Methodology:** same as spec 1, tightened one notch — algorithms cross-checked between
 [python-stdnum](https://github.com/arthurdejong/python-stdnum) **2.2** and
 [jsvat](https://github.com/se-panfilov/jsvat) **2.5.4**, but this time both libraries were *installed and

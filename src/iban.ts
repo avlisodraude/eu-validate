@@ -1,13 +1,14 @@
-import { IBAN_LENGTHS } from './countries.js'
+import { IBAN_LENGTHS, IBAN_PATTERNS } from './iban-formats.js'
 import type { ValidationResult } from './types.js'
-import { clean, fail, isBlank, lettersToDigits, mod97, ok } from './util.js'
+import { clean, fail, inputFailure, lettersToDigits, mod97, ok } from './util.js'
 
 /**
  * Validate an IBAN offline: structure, country length, and the ISO 13616
  * mod-97 check digits. No network call.
  */
 export function validateIBAN(input: string): ValidationResult {
-  if (isBlank(input)) return fail('iban', input, ['EMPTY_INPUT'])
+  const failure = inputFailure('iban', input)
+  if (failure) return failure
 
   const value = clean(input)
   const country = value.slice(0, 2)
@@ -20,7 +21,7 @@ export function validateIBAN(input: string): ValidationResult {
   if (expectedLength === undefined) {
     return fail('iban', input, ['UNKNOWN_COUNTRY'], { normalized: value, country })
   }
-  if (value.length !== expectedLength) {
+  if (value.length !== expectedLength || !IBAN_PATTERNS[country].test(value)) {
     return fail('iban', input, ['INVALID_FORMAT'], { normalized: value, country })
   }
 

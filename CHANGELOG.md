@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+The package manifest and latest published npm version remain 0.5.0. The changes
+below are implemented in the current checkout and await a new release version.
+
+### Added
+
+- National IBAN character rules and official example regressions for all 89
+  countries in SWIFT IBAN Registry release 103 (September 2026).
+- Postal `strict` mode and `checks.formatSupported` coverage reporting.
+- A 256-code-unit raw input limit and structured invalid-input/options results.
+
+### Changed
+
+- Offline safety corrections: non-string input now reports `INVALID_INPUT` with
+  an empty input field, and malformed dispatcher options return `type: null`.
+- `EU_COUNTRIES` now uses ISO `GR`; VAT prefixes retain `EL`. Postal callers can
+  use either Greek alias, with `GR` returned in the result.
+- Correct Costa Rica's IBAN length to 22 and reject checksum-correct IBANs whose
+  national character layout is invalid. See `docs/offline-validation.md` before
+  releasing these behavior corrections to existing consumers.
+- `ValidationError` omits raw identifiers from its message and exposes `result`
+  non-enumerably to reduce accidental logging of sensitive input.
+- Refresh development tooling to ESLint 10, Jest 30, tsup 9, commitlint 21,
+  lint-staged 17, and Node 22 type definitions. Retain TypeScript 5.9 because
+  TypeScript 7 is outside the lint tooling's supported peer range.
+- CI now verifies Node 22, 24, and 26 and rejects high/critical audit findings.
+- Publishing runs lint, build, tests, packed ESM/CJS verification, and the audit gate.
+- Refresh examples to 0.5.0 and clarify that hosted Cloud lookups are coming soon.
+
+## [0.5.0] - 2026-07-09
+
 ### Added
 
 - VAT checksum validation for BG, EL, HU, MT, and RO — **every EU-27 member
@@ -16,13 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   over every fixture; see `docs/vat-checksum-spec-2.md` for provenance.
 
 ### Changed
-
-- Refresh development tooling to ESLint 10, Jest 30, tsup 9, commitlint 21,
-  lint-staged 17, and Node 22 type definitions. Retain TypeScript 5.9 because
-  TypeScript 7 is outside the lint tooling's supported peer range.
-- CI now verifies Node 22, 24, and 26 and rejects high/critical audit findings.
-- Publishing runs lint, build, tests, packed ESM/CJS verification, and the audit gate.
-- Refresh examples to 0.5.0 and clarify that hosted Cloud lookups are coming soon.
 
 - `VAT_PATTERNS.MT` and `VAT_PATTERNS.RO` now reject a leading zero
   (`MT01234567`, `RO0…` were previously format-valid). Both reference
