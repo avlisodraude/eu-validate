@@ -1,8 +1,8 @@
 # Examples
 
-These small recipes use `@alosha/eu-validate`. Their dependency range is `^0.5.0`;
-installing them normally uses the published package, not the unreleased changes
-in this checkout. See [release status](../docs/README.md).
+These small recipes use `@alosha/eu-validate`. Their dependency range is `^0.6.0`;
+installing them normally uses the published release, including the input-safety,
+postal-coverage and national IBAN improvements. See [release status](../docs/README.md).
 
 | Directory | Purpose | Network behavior when running the example |
 | --- | --- | --- |
@@ -30,7 +30,7 @@ availability. Keep real keys on a server, not in browser code.
 
 ## Run against the current checkout
 
-To exercise unreleased input guards, postal options or IBAN rules without
+To exercise local input guards, postal options or IBAN rules without
 publishing, build and pack from the repository root into a temporary directory:
 
 ```sh
@@ -38,7 +38,7 @@ npm run build
 package_dir=$(mktemp -d)
 npm pack --ignore-scripts --pack-destination "$package_dir"
 cd examples/validate-onboarding
-npm install --no-save --package-lock=false "$package_dir/alosha-eu-validate-0.5.0.tgz"
+npm install --no-save --package-lock=false "$package_dir/alosha-eu-validate-0.6.0.tgz"
 npm start
 ```
 
@@ -55,7 +55,7 @@ account or identity ownership. The scripts use demonstration rows and some print
 full results; replace that logging before feeding real customer identifiers.
 The simplified CSV recipe is not a general CSV parser.
 
-For applications using the unreleased postal options, choose `strict: true` when
+For applications using the postal options, choose `strict: true` when
 an unchecked country format must not pass. Inspect `checks.formatSupported` for
 coverage and `checks.checksum === true` when a confirmed checksum is required.
 See the [API reference](../docs/api.md) and [migration guide](../docs/offline-validation.md).

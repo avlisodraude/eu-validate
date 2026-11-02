@@ -17,18 +17,17 @@ Validate EU **VAT**, **IBAN**, and Dutch **BSN/KvK** numbers — offline, zero-d
 - 🧩 **Tree-shakeable** ESM + CJS, TypeScript types included.
 - ☁️ **Optional Cloud client included** for future VIES registration and KvK lookups — the hosted service is planned.
 
-## Release status
+## Release 0.6.0
 
-The latest npm release is **0.5.0** (2026-07-09). This checkout also contains
-**unreleased** input-safety, postal-coverage, error-privacy and IBAN improvements
-from [PR #2](https://github.com/avlisodraude/eu-validate/pull/2), built on
-[maintenance PR #1](https://github.com/avlisodraude/eu-validate/pull/1).
-The package version has not been bumped. Installing from npm does not yet include
-these newer behaviors. The feature descriptions below describe this checkout;
-see the [changelog](https://github.com/avlisodraude/eu-validate/blob/main/CHANGELOG.md)
+Version **0.6.0** includes the input-safety, postal-coverage, error-privacy and
+national IBAN improvements described below. Upgrade from 0.5.0 using the
+[offline migration notes](https://github.com/avlisodraude/eu-validate/blob/main/docs/offline-validation.md).
+The maintenance and offline changes were merged through
+[PR #1](https://github.com/avlisodraude/eu-validate/pull/1) and
+[PR #2](https://github.com/avlisodraude/eu-validate/pull/2).
+See the [changelog](https://github.com/avlisodraude/eu-validate/blob/main/CHANGELOG.md)
 and [documentation index](https://github.com/avlisodraude/eu-validate/blob/main/docs/README.md)
-for the release history and implementation status. The hosted Cloud service is planned;
-the deployed demo may trail this checkout.
+for release history and implementation status. The hosted Cloud service remains planned.
 
 ## Install
 

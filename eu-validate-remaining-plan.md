@@ -16,18 +16,15 @@ The current references are [the documentation index](docs/README.md),
 - National IBAN layouts and examples for all 89 SWIFT registry release-103 countries.
 - 400 tests across seven suites; GitHub Linux checks passed at implementation commit 0023cac.
 
-## Release preparation
+## Release 0.6.0
 
-1. Review and merge [PR #1](https://github.com/avlisodraude/eu-validate/pull/1),
-   then [PR #2](https://github.com/avlisodraude/eu-validate/pull/2). Confirm checks
-   for their latest commits before merging.
-2. Choose a new version after reviewing the observable behavior changes, then
-   update package/lockfile versions, example references and release notes.
-3. Run `npm run verify`. Publication remains a separate manual action.
+The maintenance and offline PRs (#1 and #2) are merged into main. Version 0.6.0
+includes the completed offline improvements and their migration notes. Package,
+lockfile and example references are updated together. Run `npm run verify`,
+publish the package, verify npm's dist-tag, then deploy and verify the website
+against that exact published package.
 
-The manifest and published npm package remain 0.5.0. No later version was
-published by this work. There is no outstanding offline implementation item
-from the completed review.
+There is no outstanding offline implementation item from the completed review.
 
 ## Deferred maintenance
 

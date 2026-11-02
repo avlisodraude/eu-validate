@@ -1,7 +1,6 @@
 # Project documentation
 
-Status reviewed 2026-11-02. These documents describe the current development
-checkout, including changes that have not yet been published to npm.
+Status reviewed 2026-11-02. These documents describe release 0.6.0.
 
 ## Start here
 
@@ -19,9 +18,8 @@ checkout, including changes that have not yet been published to npm.
 
 ## Release and implementation status
 
-- **Published npm package:** 0.5.0, published 2026-07-09. The manifest remains
-  0.5.0 while the next release is being prepared.
-- **Implemented, unreleased:** input/option guards, the 256-code-unit raw limit,
+- **Current release:** 0.6.0, dated 2026-11-02. Previous release: 0.5.0 (2026-07-09).
+- **Included in 0.6.0:** input/option guards, the 256-code-unit raw limit,
   ISO Greek country handling, postal coverage and strict mode, redacted errors,
   and national IBAN formats for 89 registry countries.
 - **Maintenance foundation:** modernized tools, Node 22/24/26 CI, a high/critical
@@ -29,10 +27,10 @@ checkout, including changes that have not yet been published to npm.
 - **Future work:** the hosted VIES/KvK service. Offline development, builds,
   testing and publication have no dependency on that service being deployed.
 
-The delivery order is [PR #1](https://github.com/avlisodraude/eu-validate/pull/1)
-followed by [PR #2](https://github.com/avlisodraude/eu-validate/pull/2). Verify the
-current PR state before merging; these links are delivery records, not evidence
-that a new npm version is already available.
+The merged implementation was delivered through [PR #1](https://github.com/avlisodraude/eu-validate/pull/1)
+followed by [PR #2](https://github.com/avlisodraude/eu-validate/pull/2).
+Publishing and website deployments are separate release steps; their recorded
+versions and deployment results establish distribution status.
 
 ## Verification evidence
 

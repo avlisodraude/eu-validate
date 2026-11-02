@@ -1,8 +1,9 @@
 # Offline API reference
 
-This reference describes the current unreleased checkout. The published npm
-version is still 0.5.0; see [release status](README.md#release-and-implementation-status)
-before relying on new options or error codes in an installed package.
+This reference describes version 0.6.0. When upgrading from 0.5.0, see
+[the migration notes](offline-validation.md) for changed options, error codes and
+acceptance rules. See [release status](README.md#release-and-implementation-status)
+for delivery history.
 
 ## Functions
 

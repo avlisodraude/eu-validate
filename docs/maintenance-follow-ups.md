@@ -70,13 +70,13 @@ generation and packed ESM/CJS checks on Node 22/24/26. Do not install with
 
 - [PR #1](https://github.com/avlisodraude/eu-validate/pull/1) supplies the maintenance
   foundation; [PR #2](https://github.com/avlisodraude/eu-validate/pull/2) adds offline
-  improvements and builds on it. Merge in that order after reviewing current checks.
+  improvements and builds on it. Both implementation PRs are merged into main.
 - The 400-test implementation at `0023cac` passed [GitHub Linux CI](https://github.com/avlisodraude/eu-validate/actions/runs/41487015230)
   on Node 22, 24 and 26, including package runtime/type checks and the audit gate.
   Recheck the latest commit's run before merging any later changes.
-- The package manifest and published version remain 0.5.0. Choose the next version,
-  update the lockfile/version references, finalize [the changelog](../CHANGELOG.md)
-  and run `npm run verify` before the separate manual publication step.
+- The release version is 0.6.0. Package/lockfile versions, example references and
+  [the changelog](../CHANGELOG.md) describe that release. Run `npm run verify`
+  before publication, and verify the registry version and site deployment afterward.
 - `npm run release` and ordinary `npm publish` run the pre-publish gate. None of
   the verification commands publishes the package by itself.
 - The owner confirmed there is no existing backend. KvK production access has

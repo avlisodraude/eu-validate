@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-The package manifest and latest published npm version remain 0.5.0. The changes
-below are implemented in the current checkout and await a new release version.
+No changes yet.
+
+## [0.6.0] - 2026-11-02
+
+Review the offline migration notes when upgrading from 0.5.0: this release
+changes input/option errors, Greek country metadata and IBAN acceptance.
 
 ### Added
 
@@ -33,7 +37,7 @@ below are implemented in the current checkout and await a new release version.
   TypeScript 7 is outside the lint tooling's supported peer range.
 - CI now verifies Node 22, 24, and 26 and rejects high/critical audit findings.
 - Publishing runs lint, build, tests, packed ESM/CJS verification, and the audit gate.
-- Refresh examples to 0.5.0 and clarify that hosted Cloud lookups are coming soon.
+- Refresh examples to 0.6.0 and clarify that hosted Cloud lookups are coming soon.
 
 ## [0.5.0] - 2026-07-09
 

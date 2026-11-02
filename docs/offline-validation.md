@@ -2,7 +2,7 @@
 
 Reviewed 2026-11-02. These changes are independent of the planned Cloud service.
 No validator introduced here performs a network request or adds a runtime dependency.
-The manifest and published version remain 0.5.0; these improvements are unreleased.
+These improvements are included in 0.6.0; this is the upgrade guide from 0.5.0.
 See [the documentation index](README.md) for delivery status and the
 [API reference](api.md) for complete exports and error meanings.
 
@@ -91,8 +91,8 @@ against both sets of declarations. This evidence uses no live backend.
 
 ## Release notes
 
-Review these observable changes before choosing the next release version:
+Review these observable changes when upgrading to 0.6.0:
 non-string input codes, the raw input limit, malformed dispatcher options,
 `EU_COUNTRIES`/Greek postal results, stricter IBAN acceptance and redacted error
 messages. Postal strict mode is opt-in and coverage metadata is additive.
-No package version is bumped or published by this maintenance change.
+This release is versioned 0.6.0 because it adds APIs and corrects observable behavior.
