@@ -8,7 +8,7 @@
 import { validateVAT } from "@alosha/eu-validate";
 
 // Stand-in for `createClient({ apiKey }).verifyVAT(...)` from
-// `@alosha/eu-validate/cloud` — swap this for the real client in production.
+// `@alosha/eu-validate/cloud` — replace this only when the hosted service becomes available.
 async function mockVerifyVat(vat) {
   return { registered: true, name: "Acme Trading B.V." };
 }

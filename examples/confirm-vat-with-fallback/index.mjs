@@ -25,7 +25,7 @@ async function checkVat(input) {
     return { status: live.registered ? "registered" : "not_registered", company: live.name };
   } catch (err) {
     if (err instanceof CloudNotAvailableError) {
-      // The hosted Phase 3 API hasn't shipped yet — every call throws this today.
+      // A missing endpoint or connection failure becomes CloudNotAvailableError.
       // The offline checksum already passed, so degrade instead of failing the request.
       return { status: "format_valid_unconfirmed", reason: "cloud_not_available" };
     }
@@ -36,5 +36,5 @@ async function checkVat(input) {
   }
 }
 
-console.log(await checkVat("NL123456782B01")); // passes checksum -> cloud call throws CloudNotAvailableError today -> degrades gracefully
+console.log(await checkVat("NL123456782B01")); // passes checksum -> attempts a cloud call -> falls back if unavailable
 console.log(await checkVat("NL123456781B01")); // fails checksum -> rejected before ever touching the cloud client
