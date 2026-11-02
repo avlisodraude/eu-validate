@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refresh development tooling to ESLint 10, Jest 30, tsup 9, commitlint 21,
+  lint-staged 17, and Node 22 type definitions. Retain TypeScript 5.9 because
+  TypeScript 7 is outside the lint tooling's supported peer range.
+- CI now verifies Node 22, 24, and 26 and rejects high/critical audit findings.
+- Publishing runs lint, build, tests, packed ESM/CJS verification, and the audit gate.
+- Refresh examples to 0.5.0 and clarify that hosted Cloud lookups are coming soon.
+
 - `VAT_PATTERNS.MT` and `VAT_PATTERNS.RO` now reject a leading zero
   (`MT01234567`, `RO0…` were previously format-valid). Both reference
   implementations agree no real Maltese or Romanian number starts with 0.

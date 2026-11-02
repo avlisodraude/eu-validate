@@ -91,7 +91,7 @@ try {
 
 ## Production recipes
 
-Real problems, complete solutions — copy, paste, ship.
+Offline recipes are ready to run. Recipes using `/cloud` illustrate the client API for future hosted lookups; the hosted VIES/KvK service is coming soon. Keep API keys on your server.
 
 ### Reject bad VAT numbers before you ever call VIES
 
@@ -271,9 +271,9 @@ console.log(`${clean.length - 1} clean, ${rejected.length - 1} rejected — only
 
 ## What "valid" means
 
-This library answers **"is this well-formed?"** — it never makes a network request, so it cannot tell you whether a number is *registered* or belongs to a real company. For that, use the Cloud client.
+This library answers **"is this well-formed?"** — it never makes a network request, so it cannot tell you whether a number is *registered* or belongs to a real company. The separate `/cloud` client makes network requests for those lookups; the hosted service is coming soon.
 
-| | Offline (this library) | Cloud (`/cloud`) |
+| | Offline (this library) | Cloud (`/cloud`, coming soon) |
 |---|---|---|
 | VAT | format + checksum | VIES lookup — registered & active, with name/address |
 | KvK | format (8 digits) | KvK register — company name, status, address |
@@ -288,7 +288,7 @@ await eu.verifyVAT('NL123456782B01') // → VIES result
 await eu.lookupKvK('69599084')       // → KvK company data
 ```
 
-> The Cloud API is rolling out. The client surface is stable today, and requests hit the real hosted endpoint — no package upgrade needed once it's live for your account.
+> The hosted Cloud API is coming soon. The client already attempts HTTP requests, but the examples above do not establish service availability. Handle `CloudNotAvailableError` as shown in the fallback recipe.
 
 If the hosted endpoint isn't deployed yet (404, or the connection fails at the DNS/socket level), `verifyVAT()` / `lookupKvK()` throw a typed `CloudNotAvailableError` (rather than a generic `Error`) so you can catch it specifically. Once live, the client throws `CloudTimeoutError` (request exceeded `timeoutMs`) or `CloudApiError` (non-2xx response, with `status`/`statusText`/`body`) — all three are exported from `@alosha/eu-validate/cloud`.
 
@@ -315,12 +315,24 @@ French VAT numbers can have either a numeric key (formula-checkable) or an alpha
 
 ## Develop
 
+Use Node 22.22.1+ (or a supported Node 24.11+ / 26 release) for development.
+CI checks Node 22, 24, and 26. `nvm use` selects the Node 22 development line.
+The library build retains its Node 18 syntax target for compatibility; development tooling requires a newer Node version.
+
 ```bash
-npm install
+npm ci
+npm run verify  # lint, build, tests, packed ESM/CJS checks, high/critical audit gate
 npm run build   # tsup → ESM + CJS + d.ts
 npm test        # jest
 npm run lint
 ```
+
+`npm run release` publishes manually and runs the complete verification gate through
+`prepublishOnly` before uploading. Ordinary `npm publish` uses the same gate.
+
+Remaining development audit findings and the TypeScript migration blockers are tracked in
+[maintenance follow-ups](docs/maintenance-follow-ups.md). The proposed backend work is described
+in the [Cloud service plan](docs/cloud-service-plan.md).
 
 ## Support & custom work
 
